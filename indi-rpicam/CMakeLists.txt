@@ -27,6 +27,7 @@ set(INDI_RPICAM_SRCS
    ${CMAKE_CURRENT_SOURCE_DIR}/mmalexception.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/mmalcomponent.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/cameracontrol.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/raw10tobayer16pipeline.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/raw12tobayer16pipeline.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/jpegpipeline.cpp
