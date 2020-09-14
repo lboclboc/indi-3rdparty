@@ -13,9 +13,11 @@ include(CMakeCommon)
 
 find_package(MMAL REQUIRED)
 find_package(INDI REQUIRED)
+find_package(CFITSIO REQUIRED)
 
 include_directories(${INDI_INCLUDE_DIR})
 include_directories(${MMAL_INCLUDE_DIR})
+include_directories(${CFITSIO_INCLUDE_DIR})
 
 find_package(Threads REQUIRED)
 
@@ -37,6 +39,8 @@ set(INDI_RPICAM_SRCS
 
 add_executable(indi_rpicam ${INDI_RPICAM_SRCS})
 
+
+
 target_link_libraries(indi_rpicam
     ${INDI_DRIVER_LIBRARIES}
     ${CFITSIO_LIBRARIES}
@@ -47,7 +51,6 @@ target_link_libraries(indi_rpicam
 )
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/indi_rpicam.xml.cmake ${CMAKE_CURRENT_BINARY_DIR}/indi_rpicam.xml )
-
 
 install(TARGETS indi_rpicam RUNTIME DESTINATION bin)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/indi_rpicam.xml DESTINATION ${INDI_DATA_DIR})
