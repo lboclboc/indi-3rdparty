@@ -135,7 +135,7 @@ bool MMALDriver::Connect()
         // receiver->daisyChain(&raw_writer);
         brcm_pipe->daisyChain(raw12_pipe);
     }
-    if (!strcmp(camera_control->get_camera()->get_name(), "imx219")) {
+    else if (!strcmp(camera_control->get_camera()->get_name(), "imx219")) {
         pixel_size_x = pixel_size_y = 1.12F;
 
         raw_pipe.reset(new JpegPipeline());
