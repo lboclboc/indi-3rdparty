@@ -49,7 +49,6 @@ private:
     INDI::CCDChip *ccd;
     int x {0};
     int y {0};
-    int pos {0};
     int raw_x {0};  // Position in the raw-data comming in.
     enum {b0, b1, b2} state = b0; // Which byte in the RAW12 format (see above).
 };

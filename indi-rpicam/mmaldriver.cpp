@@ -105,6 +105,7 @@ void MMALDriver::addFITSKeywords(fitsfile * fptr, INDI::CCDChip * targetChip)
 void MMALDriver::capture_complete()
 {
     exposure_thread_done = true;
+    LOG_DEBUG("capture finished");
 }
 
 /**************************************************************************************
@@ -112,7 +113,7 @@ void MMALDriver::capture_complete()
  **************************************************************************************/
 bool MMALDriver::Connect()
 {
-    DEBUG(INDI::Logger::DBG_SESSION, "MMAL device connected successfully!");
+    LOG_DEBUG("MMAL device connected successfully!");
 
     camera_control.reset(new CameraControl());
 
@@ -164,7 +165,7 @@ bool MMALDriver::Connect()
  **************************************************************************************/
 bool MMALDriver::Disconnect()
 {
-    DEBUG(INDI::Logger::DBG_SESSION, "MMAL device disconnected successfully!");
+    LOG_DEBUG("MMAL device disconnected successfully!");
 
     camera_control = nullptr;
 
@@ -274,7 +275,7 @@ bool MMALDriver::UpdateCCDBin(int hor, int ver)
  **************************************************************************************/
 bool MMALDriver::UpdateCCDFrame(int x, int y, int w, int h)
 {
-	LOGF_DEBUG("UpdateCCDFrame(%d, %d, %d, %d", x, y, w, h);
+	LOGF_DEBUG("UpdateCCDFrame(%d, %d, %d, %d)", x, y, w, h);
 
     // FIXME: handle cropping
     if (x + y != 0) {
@@ -362,7 +363,7 @@ bool MMALDriver::StartExposure(float duration)
  **************************************************************************************/
 bool MMALDriver::AbortExposure()
 {
-	LOGF_DEBUG("AbortEposure()", 0);
+    LOG_DEBUG("Exposure aborted");
 
     camera_control->stop_capture();
     ccdBufferLock.unlock();
@@ -429,6 +430,7 @@ void MMALDriver::TimerHit()
                 InExposure = false;
 
                 // Let INDI::CCD know we're done filling the image buffer
+                LOG_DEBUG("Exposure complete.");
                 ExposureComplete(&PrimaryCCD);
             }
             else {

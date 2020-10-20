@@ -1,0 +1,3 @@
+- Improve speed, now its almost 40s for getting the buffers from MMAL.
+    DEBUG   39.905435 sec   : StartEposure(1.000000)
+    DEBUG   74.540797 sec   : Exposure complete.

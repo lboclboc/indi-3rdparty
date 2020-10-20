@@ -25,7 +25,6 @@
 void JpegPipeline::reset()
 {
     state = State::WANT_FF;
-    pos = -1;
     s1 = 0;
     s2 = 0;
     skip_bytes = 0;
@@ -40,8 +39,6 @@ void JpegPipeline::reset()
  */
 void JpegPipeline::acceptByte(uint8_t byte)
 {
-    pos++;
-
     switch(state)
     {
     case State::END_OF_JPEG:
