@@ -1,0 +1,12 @@
+In order to develop and crosscompile this package for raspberry on a regular Linux box running Debian,
+use following procedure:
+
+- First install the packages:  g++-arm-linux-gnueabihf gcc-arm-linux-gnueabihf
+
+- All development packages for INDI-development must be installed on a master Raspberry.
+
+- Copy all necessary libraries and headerfiles using the script rsync-from-pi.sh, argument should be host or ip of the master raspberry
+
+- Configure cmake using the extra option: -DCMAKE_TOOLCHAIN_FILE=path/to/rpi-crosscompile.cmake
+
+- Build. 

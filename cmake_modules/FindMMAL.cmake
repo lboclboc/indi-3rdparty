@@ -18,7 +18,7 @@ set (EGL_LIBS brcmGLESv2 brcmEGL)
 foreach(lib ${MMAL_LIBS} ${EGL_LIBS} vcos bcm_host m dl)
     find_library(${lib}_LIBRARY
                  NAMES ${lib}
-                 HINTS ${MMAL_DIR}/lib /opt/vc/lib
+                 HINTS ${MMAL_DIR}/lib ${CMAKE_STAGING_PREFIX}/opt/vc/lib
     )
     if (DEFINED ${lib}_LIBRARY)
         set(MMAL_LIBRARIES ${MMAL_LIBRARIES} ${${lib}_LIBRARY})
@@ -28,18 +28,20 @@ foreach(lib ${MMAL_LIBS} ${EGL_LIBS} vcos bcm_host m dl)
 endforeach(lib)
 
 find_path(BCM_INCLUDE_DIR NAMES bcm_host.h
-    HINTS "/opt/vc/include"
+    HINTS "${CMAKE_STAGING_PREFIX}/opt/vc/include"
 )
 
 find_path(MMAL_BASE_INCLUDE_DIR NAMES mmal.h
-    HINTS "/opt/vc/include/interface/mmal"
+    HINTS "${CMAKE_STAGING_PREFIX}/opt/vc/include/interface/mmal"
 )
 
 find_path(MMAL_UTIL_INCLUDE_DIR NAMES mmal_util.h
-    HINTS "/opt/vc/include/interface/mmal/util"
+    HINTS "${CMAKE_STAGING_PREFIX}/opt/vc/include/interface/mmal/util"
 )
 
 if (MMAL_BASE_INCLUDE_DIR AND BCM_INCLUDE_DIR AND MMAL_UTIL_INCLUDE_DIR)
   set(MMAL_INCLUDE_DIR ${MMAL_BASE_INCLUDE_DIR} ${BCM_INCLUDE_DIR} ${MMAL_UTIL_INCLUDE_DIR})
   set(MMAL_FOUND TRUE)
+else()
+  message(FATAL_ERROR "Failed to find mmal include files")
 endif()
