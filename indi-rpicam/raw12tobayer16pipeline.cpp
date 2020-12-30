@@ -39,9 +39,13 @@ void Raw12ToBayer16Pipeline::data_received(uint8_t *data,  uint32_t length)
 {
     uint8_t byte;
 
-    assert(bcm_pipe->header.omx_data.raw_width == 6112);
+    fprintf(stderr, "%s: raw width %d\n", __FUNCTION__, bcm_pipe->header.omx_data.raw_width); // FIXME: remove
+// FIXME: use correct assert:  assert(bcm_pipe->header.omx_data.raw_width == 6112); 
     assert(ccd->getXRes() == 4056);
     assert(ccd->getYRes() == 3040);
+
+    int maxX = ccd->getSubW() - ccd->getSubX();
+    int maxY = ccd->getSubH() - ccd->getSubY();
 
     for(;length; data++, length--)
     {
@@ -53,7 +57,7 @@ void Raw12ToBayer16Pipeline::data_received(uint8_t *data,  uint32_t length)
             raw_x = 0;
         }
 
-        if ( x < ccd->getXRes() && y < ccd->getYRes()) {
+        if ( x < maxX && y < maxY) {
             uint16_t *cur_row = reinterpret_cast<uint16_t *>(ccd->getFrameBuffer()) + y * ccd->getXRes();
 
             // RAW according to experiment.

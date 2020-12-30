@@ -57,6 +57,7 @@ public:
     uint32_t get_height() { return height; }
     const char *get_name() { return cameraName; }
     void set_camera_parameters();
+    void set_crop(int x, int y, int w, int h);
 
 private:
     void create_camera_component();
@@ -72,6 +73,7 @@ private:
     uint32_t width {};
     uint32_t height {};
     MMAL_RATIONAL_T fps_low {}, fps_high {};
+    MMAL_RECT_T crop {0, 0, 0x1000, 0x1000};
 };
 
 #endif // _MMAL_CAMERA_H
