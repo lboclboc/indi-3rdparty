@@ -31,15 +31,11 @@
 
 MMALCamera::MMALCamera(int n) : MMALComponent(MMAL_COMPONENT_DEFAULT_CAMERA), cameraNum(n)
 {
-    MMAL_STATUS_T status;
-
     MMAL_PARAMETER_INT32_T camera_num_param = {{MMAL_PARAMETER_CAMERA_NUM, sizeof(camera_num_param)}, cameraNum};
-    status = mmal_port_parameter_set(component->control, &camera_num_param.hdr);
-    MMALException::throw_if(status, "Could not select camera");
+    MMALException::throw_if(mmal_port_parameter_set(component->control, &camera_num_param.hdr), "Could not select camera");
     MMALException::throw_if(component->output_num == 0, "Camera doesn't have output ports");
 
-    status = mmal_port_parameter_set_uint32(component->control, MMAL_PARAMETER_CAMERA_CUSTOM_SENSOR_CONFIG, 0);
-    MMALException::throw_if(status, "Could not set sensor mode");
+    MMALException::throw_if(mmal_port_parameter_set_uint32(component->control, MMAL_PARAMETER_CAMERA_CUSTOM_SENSOR_CONFIG, 0), "Could not set sensor mode");
 
     // Enable the camera, and tell it its control callback function
     enable_port_with_callback(component->control);
@@ -62,16 +58,14 @@ MMALCamera::MMALCamera(int n) : MMALComponent(MMAL_COMPONENT_DEFAULT_CAMERA), ca
         cam_config.fast_preview_resume = 0;
         cam_config.use_stc_timestamp = MMAL_PARAM_TIMESTAMP_MODE_RESET_STC;
 
-        status = mmal_port_parameter_set(component->control, &cam_config.hdr);
-        MMALException::throw_if(status, "Failed to set camera config");
+        MMALException::throw_if(mmal_port_parameter_set(component->control, &cam_config.hdr), "Failed to set camera config");
     }
 
     set_capture_port_format();
 
     // Save cameras default FPS range.
     MMAL_PARAMETER_FPS_RANGE_T fps_range = {{MMAL_PARAMETER_FPS_RANGE, sizeof(fps_range)}, {0, 0}, {0, 0}};
-    status = mmal_port_parameter_get(component->output[MMAL_CAMERA_CAPTURE_PORT], &fps_range.hdr);
-    MMALException::throw_if(status, "Failed to get FPS range");
+    MMALException::throw_if(mmal_port_parameter_get(component->output[MMAL_CAMERA_CAPTURE_PORT], &fps_range.hdr), "Failed to get FPS range");
 
     fps_low = fps_range.fps_low;
     fps_high = fps_range.fps_high;

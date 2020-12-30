@@ -354,6 +354,7 @@ bool MMALDriver::StartExposure(float duration)
         camera_control->get_camera()->set_iso(isoSpeed);
 #endif
         camera_control->get_camera()->set_gain(gain);
+        camera_control->get_camera()->set_crop(PrimaryCCD.getSubX(), PrimaryCCD.getSubY(), PrimaryCCD.getSubW(), PrimaryCCD.getSubH());
         camera_control->get_camera()->set_shutter_speed(static_cast<long>(ExposureTime * 1000000));
         camera_control->start_capture();
     }

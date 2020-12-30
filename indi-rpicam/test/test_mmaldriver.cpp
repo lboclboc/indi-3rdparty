@@ -24,13 +24,16 @@ using ::testing::StrEq;
 class MockCCD : public ChipWrapper
 {
 public:
-    MockCCD()
+    MockCCD(int x=0, int y=0, int w=4056, int h=3040)
     {
-        subx = suby = 0;
-        subw = width = 4056;
-        subh = height = 3040;
+        subx = x;
+        suby = y;
+        subw = w;
+        subh = h;
+        width = 4056;
+        height = 3040;
         bpp = 16;
-        frameBufferSize = width * height * (bpp / 8);
+        frameBufferSize = w * h * (bpp / 8);
         frameBuffer = reinterpret_cast<uint8_t *>(calloc(frameBufferSize, 1));
     }
     virtual ~MockCCD() { }
@@ -50,6 +53,7 @@ public:
     virtual int getXRes() override { return width; }
     virtual int getYRes() override { return height; }
 
+private:
     int subx, suby, subw, subh;
     int width;
     int height;
@@ -216,20 +220,18 @@ TEST(TestCameraControl, double_gain)
 
 TEST(TestCameraControl, subframe)
 {
-    MockCCD ccd;
-    ccd.subx = 0;
-    ccd.suby = 0;
-    ccd.subw = 4056;
-    ccd.subh = 3040;
+    int w = 640;
+    int h = 480;
+    MockCCD ccd(100, 100, w, h);
 
     TestCameraControl c(&ccd);
 
     unlink("out/subframe.data");
-    c.testCapture(400, 2, 100000L, "out/subframe.data");
+    c.testCapture(400, 2, 600000L, "out/subframe.data");
 
     struct stat statbuf;
     EXPECT_EQ(stat("out/subframe.data", &statbuf), 0);
-    EXPECT_EQ(statbuf.st_size, 100 * 100 * 2);
+    EXPECT_EQ(statbuf.st_size, w * h * 2);
 }
 
 #ifdef USE_ISO
