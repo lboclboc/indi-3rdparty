@@ -56,7 +56,7 @@ public:
     uint32_t get_width() { return width; }
     uint32_t get_height() { return height; }
     const char *getModel() { return cameraModel; }
-
+    void set_crop(int x, int y, int w, int h);
     void setCapturePortFormat();
     void setExposureParameters(double gain, uint32_t shutter_speed);
     void getSensorInfo();
@@ -76,6 +76,7 @@ private:
     uint32_t width {};
     uint32_t height {};
     MMAL_RATIONAL_T fps_low {}, fps_high {};
+    MMAL_RECT_T crop {0, 0, 0x1000, 0x1000};
 };
 
 #endif // _MMAL_CAMERA_H

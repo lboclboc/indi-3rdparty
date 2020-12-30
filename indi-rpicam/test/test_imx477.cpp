@@ -2,6 +2,9 @@
 #include <gmock/gmock.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include <mmaldriver.h>
 #include <mmalcamera.h>
@@ -14,7 +17,6 @@
 #include <chipwrapper.h>
 #include <config.h>
 
-
 using ::testing::_;
 using ::testing::StrEq;
 
@@ -22,14 +24,19 @@ using ::testing::StrEq;
 class MockCCD : public ChipWrapper
 {
 public:
-    MockCCD()
+    MockCCD(int x=0, int y=0, int w=4056, int h=3040)
     {
+        subx = x;
+        suby = y;
+        subw = w;
+        subh = h;
         width = 4056;
         height = 3040;
         bpp = 16;
-        frameBufferSize = width * height * (bpp / 8);
+        frameBufferSize = w * h * (bpp / 8);
         frameBuffer = reinterpret_cast<uint8_t *>(calloc(frameBufferSize, 1));
     }
+    virtual ~MockCCD() { }
 
     virtual int getFrameBufferSize() override {
         return frameBufferSize;
@@ -39,10 +46,15 @@ public:
         return frameBuffer;
     }
 
+    virtual int getSubX() override { return subx; }
+    virtual int getSubY() override { return subx; }
+    virtual int getSubW() override { return subw; }
+    virtual int getSubH() override { return subh; }
     virtual int getXRes() override { return width; }
     virtual int getYRes() override { return height; }
 
 private:
+    int subx, suby, subw, subh;
     int width;
     int height;
     int bpp;
@@ -55,8 +67,12 @@ private:
 class TestCameraControl : public CameraControl, CaptureListener
 {
 public:
-    TestCameraControl()
+    TestCameraControl(MockCCD *_ccd = nullptr) : ccd(_ccd)
     {
+        if (ccd == nullptr) {
+            ccd = new MockCCD();
+            freeccd = true;
+        }
         add_capture_listener(this);
     }
 
@@ -66,7 +82,6 @@ public:
 
     long long testCapture(int iso, int gain, long shutter_speed, const char *fname = nullptr)
     {
-        MockCCD ccd;
 #ifndef USE_ISO
         fprintf(stderr, "(not using iso parameter %d)\n", iso);
 #endif
@@ -79,7 +94,7 @@ public:
         BroadcomPipeline *brcm_pipe = new BroadcomPipeline();
         raw_pipe.daisyChain(brcm_pipe);
 
-        Raw12ToBayer16Pipeline *raw12_pipe = new Raw12ToBayer16Pipeline(brcm_pipe, &ccd);
+        Raw12ToBayer16Pipeline *raw12_pipe = new Raw12ToBayer16Pipeline(brcm_pipe, ccd);
         brcm_pipe->daisyChain(raw12_pipe);
 
         add_pipeline(&raw_pipe);
@@ -88,6 +103,7 @@ public:
 #endif
         setGain(gain);
         setShutterSpeed(shutter_speed);
+        camera->set_crop(ccd->getSubX(), ccd->getSubY(), ccd->getSubW(), ccd->getSubH());
 
         done = false;
         startCapture();
@@ -102,14 +118,14 @@ public:
         // Dump raw-file if requested.
         if (fname) {
             auto out = std::ofstream(fname);
-            out.write(reinterpret_cast<const char *>(ccd.getFrameBuffer()), ccd.getFrameBufferSize());
+            out.write(reinterpret_cast<const char *>(ccd->getFrameBuffer()), ccd->getFrameBufferSize());
             out.close();
         }
 
         // Calculate some number proportional to the number of photons collected.
         long long photons = 0;
-        const uint16_t *p = reinterpret_cast<const uint16_t *>(ccd.getFrameBuffer());
-        const uint16_t *end = reinterpret_cast<const uint16_t *>(ccd.getFrameBuffer() + ccd.getFrameBufferSize());
+        const uint16_t *p = reinterpret_cast<const uint16_t *>(ccd->getFrameBuffer());
+        const uint16_t *end = reinterpret_cast<const uint16_t *>(ccd->getFrameBuffer() + ccd->getFrameBufferSize());
         while(p < end) {
             photons += *p++;
         }
@@ -124,6 +140,8 @@ public:
 
 private:
     bool done {false};
+    MockCCD *ccd {0};
+    bool freeccd {false};
 };
 // }}}
 
@@ -190,6 +208,22 @@ TEST(TestCameraControl, double_gain)
     EXPECT_GT(relation, 120);
     EXPECT_LT(relation, 200);
     fprintf(stderr, "0.2s exposure is %d%% brighter than 0.1s\n", relation - 100);
+}
+
+TEST(TestCameraControl, subframe)
+{
+    int w = 640;
+    int h = 480;
+    MockCCD ccd(100, 100, w, h);
+
+    TestCameraControl c(&ccd);
+
+    unlink("out/subframe.data");
+    c.testCapture(400, 2, 600000L, "out/subframe.data");
+
+    struct stat statbuf;
+    EXPECT_EQ(stat("out/subframe.data", &statbuf), 0);
+    EXPECT_EQ(statbuf.st_size, w * h * 2);
 }
 
 #ifdef USE_ISO

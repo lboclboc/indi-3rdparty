@@ -101,8 +101,10 @@ void MMALCamera::setExposureParameters(double gain, uint32_t shutter_speed)
     MMAL_PARAMETER_EXPOSUREMODE_T exposure = {{MMAL_PARAMETER_EXPOSURE_MODE, sizeof exposure}, MMAL_PARAM_EXPOSUREMODE_OFF};
     MMALException::throw_if(mmal_port_parameter_set(component->control, &exposure.hdr), "Failed to set exposure mode");
 
-    MMAL_PARAMETER_INPUT_CROP_T crop = {{MMAL_PARAMETER_INPUT_CROP, sizeof crop}, {0, 0, 0x1000, 0x1000}};
-    MMALException::throw_if(mmal_port_parameter_set(component->control, &crop.hdr), "Failed to set ROI");
+    MMAL_PARAMETER_INPUT_CROP_T crop_param = {{MMAL_PARAMETER_INPUT_CROP, sizeof crop_param}, crop};
+    MMALException::throw_if(mmal_port_parameter_set(component->control, &crop_param.hdr), "Failed to set ROI");
+    MMALException::throw_if(mmal_port_parameter_get(component->control, &crop_param.hdr), "Failed to get ROI");
+    fprintf(stderr, "%s: Camera crop set to %d,%d,%d,%d\n", __FUNCTION__, crop_param.rect.x, crop_param.rect.y, crop_param.rect.width, crop_param.rect.height);
 
 
     component->port[CAPTURE_PORT_NO]->buffer_size = component->port[CAPTURE_PORT_NO]->buffer_size_recommended;
@@ -200,7 +202,18 @@ void MMALCamera::setCapturePortFormat()
 }
 
 /**
- * @brief Gets default size for camera.
+ * @breif Sets the size of subframe.
+ */
+void MMALCamera::set_crop(int x, int y, int w, int h)
+{
+    crop.x = x;
+    crop.y = y;
+    crop.width = w;
+    crop.height = h;
+}
+
+/**
+ * @brief Gets default size for camrea.
  */
 void MMALCamera::getSensorInfo()
 {

@@ -294,21 +294,10 @@ bool MMALDriver::UpdateCCDFrame(int x, int y, int w, int h)
 {
     LOGF_DEBUG("%s(%d, %d, %d, %d)", __FUNCTION__, x, y, w, h);
 
-    // FIXME: handle cropping
-    if (x + y != 0)
-    {
-        LOGF_ERROR("%s: origin offset not supported.", __FUNCTION__);
-    }
+    PrimaryCCD.setFrame(x, y, w, h);
 
-    // Let's calculate how much memory we need for the primary CCD buffer
-    int xRes = PrimaryCCD.getXRes();
-    int yRes = PrimaryCCD.getYRes();
-    int bpp = PrimaryCCD.getBPP();
-    unsigned int nbuf = static_cast<unsigned int>(xRes * yRes * (bpp / 8));
-
-    nbuf *= 2;
-
-    LOGF_DEBUG("%s: frame buffer size set to %d", __FUNCTION__, nbuf);
+    // Total bytes required for image buffer
+    uint32_t nbuf = (PrimaryCCD.getSubW() * PrimaryCCD.getSubH() * PrimaryCCD.getBPP() / 8);
 
     PrimaryCCD.setFrameBufferSize(nbuf);
 
@@ -366,6 +355,7 @@ bool MMALDriver::StartExposure(float duration)
 #endif
         camera_control->setGain(gain);
         camera_control->setShutterSpeed(static_cast<long>(ExposureTime * 1000000));
+        camera_control->get_camera()->set_crop(PrimaryCCD.getSubX(), PrimaryCCD.getSubY(), PrimaryCCD.getSubW(), PrimaryCCD.getSubH());
         camera_control->startCapture();
     }
     catch (MMALException &e)
