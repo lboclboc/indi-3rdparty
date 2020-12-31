@@ -24,6 +24,7 @@
 #include <indiccd.h>
 #include <atomic>
 #include <cstdint>
+#include <memory>
 #include "cameracontrol.h"
 #include "jpegpipeline.h"
 #include "broadcompipeline.h"

@@ -51,8 +51,8 @@ public:
     void set_iso(int iso) { this->iso = iso; }
 #endif
     void set_gain(double gain) { this->gain = gain; }
-    int capture();
-    void abort();
+    int start_capture();
+    void stop_capture();
     uint32_t get_width() { return width; }
     uint32_t get_height() { return height; }
     const char *get_name() { return cameraName; }

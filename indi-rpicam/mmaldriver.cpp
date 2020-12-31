@@ -116,12 +116,13 @@ void MMALDriver::addFITSKeywords(fitsfile * fptr, INDI::CCDChip * targetChip)
 
 }
 
-/**
+/**************************************************************************************
  * @brief capture_complete Called by the MMAL callback routine (other thread) when whole capture is done.
- */
+ **************************************************************************************/
 void MMALDriver::capture_complete()
 {
     LOGF_DEBUG("%s", __FUNCTION__);
+    camera_control->stop_capture();
     exposure_thread_done = true;
 }
 
@@ -133,8 +134,8 @@ bool MMALDriver::Connect()
     LOGF_DEBUG("%s()", __FUNCTION__);
 
     camera_control.reset(new CameraControl());
-
     // FIXME: Seems the HIQ-camera is quite buggy, it needs the mmal_component to be opened twice
+    camera_control.reset(); // Since the reset below would allocate the second camera object before the first got deleted.
     camera_control.reset(new CameraControl());
 
     camera_control->add_capture_listener(this);

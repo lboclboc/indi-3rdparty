@@ -59,6 +59,7 @@ private:
     void signal_complete();
     void signal_data_received(uint8_t *data, uint32_t length);
     std::chrono::steady_clock::time_point start_time;
+    bool print_first {true};
 };
 
 #endif // CAMERACONTROL_H

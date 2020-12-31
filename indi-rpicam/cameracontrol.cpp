@@ -41,6 +41,7 @@ CameraControl::CameraControl()
 
 CameraControl::~CameraControl()
 {
+    camera->disconnect();
 }
 
 /**
@@ -76,8 +77,9 @@ void CameraControl::start_capture()
     }
 
     camera->set_camera_parameters();
-    camera->capture();
+    camera->start_capture();
     start_time = std::chrono::steady_clock::now();
+    print_first = true;
 }
 
 /**
@@ -85,13 +87,19 @@ void CameraControl::start_capture()
  */
 void CameraControl::stop_capture()
 {
-    camera->abort();
+    camera->stop_capture();
     std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
-    fprintf(stderr, "exposure aborted after %f s\n", diff.count());
+    fprintf(stderr, "exposure stopped after %f s\n", diff.count());
 }
 
 void CameraControl::signal_data_received(uint8_t *data, uint32_t length)
 {
+    if (print_first) {
+        std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
+        fprintf(stderr, "first buffer received after %f s\n", diff.count());
+        print_first = false;
+    }
+
     for(auto p : pipelines) {
         p->data_received(data, length);
     }
@@ -100,7 +108,7 @@ void CameraControl::signal_data_received(uint8_t *data, uint32_t length)
 void CameraControl::signal_complete()
 {
     std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
-    fprintf(stderr, "exposure finished after %f s\n", diff.count());
+    fprintf(stderr, "all buffers received after %f s\n", diff.count());
     for(auto p : capture_listeners) {
         p->capture_complete();
     }
