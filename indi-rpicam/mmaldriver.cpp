@@ -54,6 +54,13 @@ MMALDriver::MMALDriver() : INDI::CCD(), chipWrapper(&PrimaryCCD)
     // Register our application with the logging system
     vcos_log_register("indi_rpicam", &indi_rpicam_log_category);
 
+    camera_control.reset(new CameraControl());
+    // FIXME: Seems the HIQ-camera is quite buggy, it needs the mmal_component to be opened twice
+    camera_control.reset(); // Since the reset below would allocate the second camera object before the first got deleted.
+    camera_control.reset(new CameraControl());
+
+    camera_control->add_capture_listener(this);
+
     LOGF_DEBUG("%s() - returning", __FUNCTION__);
 }
 
@@ -132,13 +139,6 @@ void MMALDriver::capture_complete()
 bool MMALDriver::Connect()
 {
     LOGF_DEBUG("%s()", __FUNCTION__);
-
-    camera_control.reset(new CameraControl());
-    // FIXME: Seems the HIQ-camera is quite buggy, it needs the mmal_component to be opened twice
-    camera_control.reset(); // Since the reset below would allocate the second camera object before the first got deleted.
-    camera_control.reset(new CameraControl());
-
-    camera_control->add_capture_listener(this);
 
     SetTimer(POLLMS);
 

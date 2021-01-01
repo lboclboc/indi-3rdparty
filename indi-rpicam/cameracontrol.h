@@ -28,7 +28,7 @@
 
 #include "mmalcamera.h"
 #include "mmalencoder.h"
-#include "mmallistener.h"
+#include "mmalbufferlistener.h"
 #include "capturelistener.h"
 
 class Pipeline;
@@ -37,7 +37,7 @@ class Pipeline;
  * @brief The CameraControl class Initializes all MMAL components and connections.
  * Also sets up handles callbacks to receivers of the image.
  */
-class CameraControl : MMALListener
+class CameraControl : MMALBufferListener
 {
 public:
     CameraControl();

@@ -25,7 +25,7 @@
 #include <vector>
 
 #include "mmalcomponent.h"
-#include "mmallistener.h"
+#include "mmalbufferlistener.h"
 
 /**
  * @brief The MMALEncoder class is a C++ wrapper around the pure MMAL encoder component.

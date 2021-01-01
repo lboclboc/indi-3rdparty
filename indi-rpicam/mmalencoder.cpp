@@ -30,7 +30,7 @@
 #include <mmal_logging.h>
 
 #include "mmalencoder.h"
-#include "mmallistener.h"
+#include "mmalbufferlistener.h"
 #include "mmalexception.h"
 
 MMALEncoder::MMALEncoder() : MMALComponent(MMAL_COMPONENT_DEFAULT_IMAGE_ENCODER)

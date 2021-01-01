@@ -29,7 +29,7 @@
 
 #include "mmalcomponent.h"
 #include "mmalexception.h"
-#include "mmallistener.h"
+#include "mmalbufferlistener.h"
 
 MMALComponent::MMALComponent(const char *component_type)
 {
@@ -53,16 +53,9 @@ MMALComponent::~MMALComponent()
 
 void MMALComponent::enable_port_with_callback(MMAL_PORT_T *port)
 {
-    MMAL_STATUS_T status = mmal_port_enable(port, c_callback);
-    MMALException::throw_if(status, "Failed to enable port");
+    MMALException::throw_if(mmal_port_enable(port, c_callback), "Failed to enable port");
 }
 
-/**
- * @brief MMALComponent::c_callback Wraps a simple C-callback to a C++ object callback.
- * Uses the userdata as a pointer to the object to be called.
- * @param port MMAL Component port
- * @param buffer MMAL Buffer of data
- */
 void MMALComponent::c_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
     MMALComponent *p = dynamic_cast<MMALComponent *>(port->component->userdata);
@@ -82,7 +75,7 @@ void MMALComponent::callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
     mmal_buffer_header_mem_lock(buffer);
 
     try {
-        for(auto *l : port_listeners)
+        for(auto *l : buffer_listeners)
         {
             l->buffer_received(port, buffer);
         }

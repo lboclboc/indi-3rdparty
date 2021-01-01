@@ -32,16 +32,11 @@ CameraControl::CameraControl()
 {
     camera.reset(new MMALCamera(0));
     encoder.reset(new MMALEncoder());   // Seems using an encoder is required to get to the raw data.
-    encoder->add_port_listener(this);
-
-    camera->connect(2, encoder.get(), 0); // Connected the capture port to the encoder.
-
-    encoder->activate();
+    encoder->add_buffer_listener(this);
 }
 
 CameraControl::~CameraControl()
 {
-    camera->disconnect();
 }
 
 /**
@@ -72,11 +67,14 @@ void CameraControl::buffer_received(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buf
  */
 void CameraControl::start_capture()
 {
+
+    camera->connect(2, encoder.get(), 0); // Connected the capture port to the encoder.
+
+    encoder->activate();
     if (capture_listeners.size() == 0) {
         throw std::runtime_error("No capture listeners registered, start_capture not possible.");
     }
 
-    camera->set_camera_parameters();
     camera->start_capture();
     start_time = std::chrono::steady_clock::now();
     print_first = true;
@@ -90,6 +88,7 @@ void CameraControl::stop_capture()
     camera->stop_capture();
     std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
     fprintf(stderr, "exposure stopped after %f s\n", diff.count());
+    camera->disconnect();
 }
 
 void CameraControl::signal_data_received(uint8_t *data, uint32_t length)

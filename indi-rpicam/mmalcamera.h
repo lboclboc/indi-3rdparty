@@ -29,7 +29,7 @@ class MMALEncoder;
 #include <mmal.h>
 
 #include "mmalcomponent.h"
-#include "mmallistener.h"
+#include "mmalbufferlistener.h"
 #include "config.h"
 
 /**
@@ -56,12 +56,12 @@ public:
     uint32_t get_width() { return width; }
     uint32_t get_height() { return height; }
     const char *get_name() { return cameraName; }
-    void set_camera_parameters();
 
 private:
     void create_camera_component();
     void create_encoder();
     void set_capture_port_format();
+    void set_camera_parameters();
     void get_sensor_info();
 
     int32_t cameraNum {};

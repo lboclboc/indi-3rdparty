@@ -25,11 +25,12 @@
 #include <mmal_component.h>
 #include <mmal_pool.h>
 
-class MMALListener;
+class MMALBufferListener;
 class MMAL_CONNECTION_T;
 
 /**
- * @brief The MMALComponent class Base class for MMAL component wrappers MMALCamera and MMALEncoder
+ * The MMALComponent class Base class for MMAL component wrappers MMALCamera and MMALEncoder
+ *
  * Dealing with connections and callbacks basics.
  */
 class MMALComponent
@@ -37,21 +38,48 @@ class MMALComponent
 public:
     MMALComponent(const char *component_type);
     virtual ~MMALComponent();
+
+    /**
+     * Connect my output port to port of other component
+     *
+     * Note, only one connection at a time is possible for this mmal_component wrapper.
+     *
+     * @param src_port The source port number of this component.
+     * @param dst component to connect to.
+     * @param dst_port destination input port of other component.
+     *
+     * FIXME: Support multiple connections.
+    */
     void connect(int src_port, MMALComponent *dst, int dst_port);
+
+    /**
+     * Disconnect my connection to other components.
+     */
     void disconnect();
-    void add_port_listener(MMALListener *l) { port_listeners.push_back(l); }
+
+    /**
+     * Add a MMALBufferListerner interface componet to the vector of listeners to 
+     * receive port callbacks.
+     */
+    void add_buffer_listener(MMALBufferListener *l) { buffer_listeners.push_back(l); }
 
 protected:
     virtual void callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
     virtual void return_buffer(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
     void enable_port_with_callback(MMAL_PORT_T *port);
     MMAL_COMPONENT_T *component {};
-    // FIXME: Support multiple connections.
     MMAL_CONNECTION_T *connection {};
 
 private:
+    /**
+     * @brief MMALComponent::c_callback Wraps a simple C-callback to a C++ object callback.
+     * Uses the userdata as a pointer to the object to be called.
+     * @param port MMAL Component port
+     * @param buffer MMAL Buffer of data
+     */
     static void c_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
-    std::vector<MMALListener *>port_listeners;
+
+    std::vector<MMALBufferListener *>buffer_listeners;
 };
 
 #endif // MMALCOMPONENT_H
