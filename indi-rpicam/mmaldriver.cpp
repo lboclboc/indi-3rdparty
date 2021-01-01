@@ -424,28 +424,20 @@ void MMALDriver::TimerHit()
         PrimaryCCD.setExposureLeft(timeleft);
 
         // Less than a 1 second away from exposure completion, use shorter timer. If less than 1m, take the image.
-        if (timeleft < 1.0) {
-            if (exposure_thread_done) {
-				/* We're done exposing */
-				IDMessage(getDeviceName(), "Exposure done, downloading image...");
+        if (exposure_thread_done) {
+            /* We're done exposing */
+            IDMessage(getDeviceName(), "Exposure done, downloading image...");
 
-				// Set exposure left to zero
-				PrimaryCCD.setExposureLeft(0);
+            // Set exposure left to zero
+            PrimaryCCD.setExposureLeft(0);
 
-				// We're no longer exposing...
-                ccdBufferLock.unlock();
-                InExposure = false;
+            // We're no longer exposing...
+            ccdBufferLock.unlock();
+            InExposure = false;
 
-                // Let INDI::CCD know we're done filling the image buffer
-                LOG_DEBUG("Exposure complete.");
-                ExposureComplete(&PrimaryCCD);
-            }
-            else {
-                nextTimer = static_cast<uint32_t>(timeleft * 1000);
-                if (nextTimer < 200) {
-                    nextTimer = 200;
-                }
-            }
+            // Let INDI::CCD know we're done filling the image buffer
+            LOG_DEBUG("Exposure complete.");
+            ExposureComplete(&PrimaryCCD);
         }
     }
 
