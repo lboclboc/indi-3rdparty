@@ -31,17 +31,46 @@
 CameraControl::CameraControl()
 {
     camera.reset(new MMALCamera(0));
-    encoder.reset(new MMALEncoder());   // Seems using an encoder is required to get to the raw data.
+
+    encoder.reset(new MMALEncoder());
     encoder->add_buffer_listener(this);
+
+    camera->connect(MMALCamera::CAPTURE_PORT_NO, encoder.get(), 0); // Connected the capture port to the encoder.
 }
 
 CameraControl::~CameraControl()
 {
+    camera->disconnect();
+    encoder.reset();
+}
+
+void CameraControl::startCapture()
+{
+
+    camera->setCapturePortFormat();
+
+    camera->setExposureParameters();
+
+
+    encoder->activate();
+    if (capture_listeners.size() == 0) {
+        throw std::runtime_error("No capture listeners registered, start_capture not possible.");
+    }
+
+    camera->startCapture();
+    start_time = std::chrono::steady_clock::now();
+    print_first = true;
+}
+
+void CameraControl::stopCapture()
+{
+    camera->stopCapture();
+    std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
+    fprintf(stderr, "%s: exposure stopped after %f s\n", __FUNCTION__, diff.count());
 }
 
 /**
- * @brief CameraControl::buffer_received Buffer received to what ever we are listened to.
- * This method is responsible to feed image data to the indi-driver code.
+ * @brief Buffer received from a port.
  * @param port
  * @param buffer
  */
@@ -62,40 +91,11 @@ void CameraControl::buffer_received(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buf
     }
 }
 
-/**
- * @brief CameraControl::capture Start thread to perform the actual capture.
- */
-void CameraControl::start_capture()
-{
-
-    camera->connect(2, encoder.get(), 0); // Connected the capture port to the encoder.
-
-    encoder->activate();
-    if (capture_listeners.size() == 0) {
-        throw std::runtime_error("No capture listeners registered, start_capture not possible.");
-    }
-
-    camera->start_capture();
-    start_time = std::chrono::steady_clock::now();
-    print_first = true;
-}
-
-/**
- * @brief CameraControl::stop_capture Tell camera object to stop capturing.
- */
-void CameraControl::stop_capture()
-{
-    camera->stop_capture();
-    std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
-    fprintf(stderr, "exposure stopped after %f s\n", diff.count());
-    camera->disconnect();
-}
-
 void CameraControl::signal_data_received(uint8_t *data, uint32_t length)
 {
     if (print_first) {
         std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
-        fprintf(stderr, "first buffer received after %f s\n", diff.count());
+        fprintf(stderr, "%s: first buffer received after %f s\n", __FUNCTION__, diff.count());
         print_first = false;
     }
 
@@ -107,9 +107,9 @@ void CameraControl::signal_data_received(uint8_t *data, uint32_t length)
 void CameraControl::signal_complete()
 {
     std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
-    fprintf(stderr, "all buffers received after %f s\n", diff.count());
+    fprintf(stderr, "%s: all buffers received after %f s\n", __FUNCTION__, diff.count());
     for(auto p : capture_listeners) {
         p->capture_complete();
     }
+    stopCapture();
 }
-

@@ -55,11 +55,16 @@ MMALDriver::MMALDriver() : INDI::CCD(), chipWrapper(&PrimaryCCD)
     vcos_log_register("indi_rpicam", &indi_rpicam_log_category);
 
     camera_control.reset(new CameraControl());
-    // FIXME: Seems the HIQ-camera is quite buggy, it needs the mmal_component to be opened twice
-    camera_control.reset(); // Since the reset below would allocate the second camera object before the first got deleted.
-    camera_control.reset(new CameraControl());
+
+//    // FIXME: Seems the HIQ-camera is quite buggy, it needs the mmal_component to be opened twice
+//    camera_control.reset(); // Since the reset below would allocate the second camera object before the first got deleted.
+//    camera_control.reset(new CameraControl());
 
     camera_control->add_capture_listener(this);
+
+    setupPipeline();
+
+    camera_control->add_pipeline(raw_pipe.get());
 
     LOGF_DEBUG("%s() - returning", __FUNCTION__);
 }
@@ -129,7 +134,6 @@ void MMALDriver::addFITSKeywords(fitsfile * fptr, INDI::CCDChip * targetChip)
 void MMALDriver::capture_complete()
 {
     LOGF_DEBUG("%s", __FUNCTION__);
-    camera_control->stop_capture();
     exposure_thread_done = true;
 }
 
@@ -142,41 +146,9 @@ bool MMALDriver::Connect()
 
     SetTimer(POLLMS);
 
-    float pixel_size_x = 0, pixel_size_y = 0;
-
-    if (!strcmp(camera_control->get_camera()->get_name(), "imx477") ||
-        !strcmp(camera_control->get_camera()->get_name(), "testc")) {
-        pixel_size_x = pixel_size_y = 1.55F;
-
-        raw_pipe.reset(new JpegPipeline());
-
-        BroadcomPipeline *brcm_pipe = new BroadcomPipeline();
-        raw_pipe->daisyChain(brcm_pipe);
-
-        Raw12ToBayer16Pipeline *raw12_pipe = new Raw12ToBayer16Pipeline(brcm_pipe, &chipWrapper);
-        brcm_pipe->daisyChain(raw12_pipe);
-    }
-    else if (!strcmp(camera_control->get_camera()->get_name(), "imx219")) {
-        pixel_size_x = pixel_size_y = 1.12F;
-
-        raw_pipe.reset(new JpegPipeline());
-
-        BroadcomPipeline *brcm_pipe = new BroadcomPipeline();
-        raw_pipe->daisyChain(brcm_pipe);
-
-        Raw10ToBayer16Pipeline *raw10_pipe = new Raw10ToBayer16Pipeline(brcm_pipe, &chipWrapper);
-        brcm_pipe->daisyChain(raw10_pipe);
-    }
-    else {
-        LOGF_WARN("%s: Unknown camera name: %s\n", __FUNCTION__, camera_control->get_camera()->get_name());
-        return false;
-    }
-    SetCCDParams(static_cast<int>(camera_control->get_camera()->get_width()), static_cast<int>(camera_control->get_camera()->get_height()), 16, pixel_size_x, pixel_size_y);
 
     // Should probably not be called by the subclass of CCD - not clear.
     UpdateCCDFrame(0, 0, static_cast<int>(camera_control->get_camera()->get_width()), static_cast<int>(camera_control->get_camera()->get_height()));
-
-    camera_control->add_pipeline(raw_pipe.get());
 
     return true;
 }
@@ -187,10 +159,6 @@ bool MMALDriver::Connect()
 bool MMALDriver::Disconnect()
 {
     LOGF_DEBUG("%s()", __FUNCTION__);
-
-    camera_control = nullptr;
-
-    raw_pipe = nullptr;
 
     return true;
 }
@@ -207,8 +175,9 @@ const char *MMALDriver::getDefaultName()
 void MMALDriver::ISGetProperties(const char * dev)
 {
     LOGF_DEBUG("%s()", __FUNCTION__);
-    if (dev != nullptr && strcmp(getDeviceName(), dev) != 0)
+    if (dev != nullptr && strcmp(getDeviceName(), dev) != 0) {
         return;
+    }
 
     INDI::CCD::ISGetProperties(dev);
 }
@@ -216,6 +185,7 @@ void MMALDriver::ISGetProperties(const char * dev)
 bool MMALDriver::initProperties()
 {
     LOGF_DEBUG("%s()", __FUNCTION__);
+
     // We must ALWAYS init the properties of the parent class first
     INDI::CCD::initProperties();
 
@@ -246,6 +216,12 @@ bool MMALDriver::initProperties()
 	//	| CCD_HAS_STREAMING 	// Does the CCD support live video streaming?
 	//	| CCD_HAS_WEB_SOCKET 	// Does the CCD support web socket transfers?
 	);
+
+    SetCCDParams(static_cast<int>(camera_control->get_camera()->get_width()),
+                 static_cast<int>(camera_control->get_camera()->get_height()),
+                 16,
+                 camera_control->get_camera()->xPixelSize,
+                 camera_control->get_camera()->yPixelSize);
 
     setDefaultPollingPeriod(500);
 
@@ -291,10 +267,15 @@ bool MMALDriver::UpdateCCDBin(int hor, int ver)
     return true;
 }
 
-/**************************************************************************************
+/**
  * CCD calls this function when CCD Frame dimension needs to be updated in the hardware.
+ *
  * Derived classes should implement this function.
- **************************************************************************************/
+ * @param x start x pos
+ * @param y start y pos
+ * @param w width
+ * @param h height
+ */
 bool MMALDriver::UpdateCCDFrame(int x, int y, int w, int h)
 {
 	LOGF_DEBUG("%s(%d, %d, %d, %d)", __FUNCTION__, x, y, w, h);
@@ -319,10 +300,11 @@ bool MMALDriver::UpdateCCDFrame(int x, int y, int w, int h)
     return true;
 }
 
-/**************************************************************************************
+/**
  * Client is asking us to start an exposure
- * \param duration exposure time in seconds.
- **************************************************************************************/
+ *
+ * @param duration exposure time in seconds.
+ */
 bool MMALDriver::StartExposure(float duration)
 {
 	LOGF_DEBUG("%s(%f)", __FUNCTION__, duration);
@@ -357,16 +339,17 @@ bool MMALDriver::StartExposure(float duration)
 
 
     ccdBufferLock.lock();
+
     raw_pipe->reset_pipe();
 
     image_buffer_pointer = PrimaryCCD.getFrameBuffer();
     try {
 #ifdef USE_ISO
-        camera_control->get_camera()->set_iso(isoSpeed);
+        camera_control->get_camera()->setISO(isoSpeed);
 #endif
-        camera_control->get_camera()->set_gain(gain);
-        camera_control->get_camera()->set_shutter_speed(static_cast<long>(ExposureTime * 1000000));
-        camera_control->start_capture();
+        camera_control->get_camera()->setGain(gain);
+        camera_control->get_camera()->setShutterSpeed(static_cast<long>(ExposureTime * 1000000));
+        camera_control->startCapture();
     }
     catch (MMALException &e)
     {
@@ -388,10 +371,12 @@ bool MMALDriver::AbortExposure()
 {
     LOGF_DEBUG("%s()", __FUNCTION__);
 
-    camera_control->stop_capture();
+    camera_control->stopCapture();
     ccdBufferLock.unlock();
     InExposure = false;
     PrimaryCCD.setExposureLeft(0);
+
+    camera_control.reset();
 
     return true;
 }
@@ -553,3 +538,32 @@ bool MMALDriver::ISNewBLOB(const char *dev, const char *name, int sizes[], int b
     return INDI::CCD::ISNewBLOB(dev, name, sizes, blobsizes, blobs, formats, names, n);
 }
 
+void MMALDriver::setupPipeline()
+{
+    fprintf(stderr, "%s()\n", __FUNCTION__);
+
+    assert(camera_control->get_camera());
+
+    if (!strcmp(camera_control->get_camera()->getModel(), "imx477")) {
+        raw_pipe.reset(new JpegPipeline());
+
+        BroadcomPipeline *brcm_pipe = new BroadcomPipeline();
+        raw_pipe->daisyChain(brcm_pipe);
+
+        Raw12ToBayer16Pipeline *raw12_pipe = new Raw12ToBayer16Pipeline(brcm_pipe, &chipWrapper);
+        brcm_pipe->daisyChain(raw12_pipe);
+    }
+    else if (!strcmp(camera_control->get_camera()->getModel(), "imx219")) {
+        raw_pipe.reset(new JpegPipeline());
+
+        BroadcomPipeline *brcm_pipe = new BroadcomPipeline();
+        raw_pipe->daisyChain(brcm_pipe);
+
+        Raw10ToBayer16Pipeline *raw10_pipe = new Raw10ToBayer16Pipeline(brcm_pipe, &chipWrapper);
+        brcm_pipe->daisyChain(raw10_pipe);
+    }
+    else {
+        LOGF_WARN("%s: Unknown camera type: %s\n", __FUNCTION__, camera_control->get_camera()->getModel());
+        return;
+    }
+}

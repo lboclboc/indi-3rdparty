@@ -50,7 +50,8 @@ MMALEncoder::MMALEncoder() : MMALComponent(MMAL_COMPONENT_DEFAULT_IMAGE_ENCODER)
     }
 
     /* Seems its only the JPEG encoding that actually returns the true raw-format from the HQ-camera */
-    output->format->encoding = MMAL_ENCODING_JPEG; output->format->encoding_variant = 0;
+    output->format->encoding = MMAL_ENCODING_JPEG;
+    output->format->encoding_variant = 0;
 
     status = mmal_port_format_commit(output);
     MMALException::throw_if(status, "Failed to commit encoder output");
@@ -77,7 +78,7 @@ void MMALEncoder::activate()
 {
     MMAL_STATUS_T status;
 
-    enable_port_with_callback(component->output[0]);
+    enablePort(component->output[0]);
 
     unsigned int num = mmal_queue_length(pool->queue);
     for (unsigned int q = 0; q < num; q++)

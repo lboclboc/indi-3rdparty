@@ -29,13 +29,17 @@ class MMALBufferListener;
 class MMAL_CONNECTION_T;
 
 /**
- * The MMALComponent class Base class for MMAL component wrappers MMALCamera and MMALEncoder
+ * A C++ wrapper class for a generic MMALComponent.
  *
- * Dealing with connections and callbacks basics.
+ * This class will create the MMAL_COMPONENT_T-component. It will manage connections and callbacks basics.
+ * See Multi-Media Abstraction Layer API from broadcom.
  */
 class MMALComponent
 {
 public:
+    /**
+     * Constuctor that creates the underlying mmal component.
+     */
     MMALComponent(const char *component_type);
     virtual ~MMALComponent();
 
@@ -61,23 +65,23 @@ public:
      * Add a MMALBufferListerner interface componet to the vector of listeners to 
      * receive port callbacks.
      */
-    void add_buffer_listener(MMALBufferListener *l) { buffer_listeners.push_back(l); }
+    void add_buffer_listener(MMALBufferListener *l);
 
 protected:
-    virtual void callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
+    virtual void port_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
     virtual void return_buffer(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
-    void enable_port_with_callback(MMAL_PORT_T *port);
+    void enablePort(MMAL_PORT_T *port);
     MMAL_COMPONENT_T *component {};
     MMAL_CONNECTION_T *connection {};
 
 private:
     /**
-     * @brief MMALComponent::c_callback Wraps a simple C-callback to a C++ object callback.
+     * @brief MMALComponent::c_port_callback Wraps a simple C-callback to a C++ object callback.
      * Uses the userdata as a pointer to the object to be called.
      * @param port MMAL Component port
      * @param buffer MMAL Buffer of data
      */
-    static void c_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
+    static void c_port_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
 
     std::vector<MMALBufferListener *>buffer_listeners;
 };

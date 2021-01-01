@@ -38,7 +38,7 @@ MMALComponent::MMALComponent(const char *component_type)
     /* Create the component */
     status = mmal_component_create(component_type, &component);
     MMALException::throw_if(status, "Failed to create component");
-    component->userdata = this; // c_callback needs this to find this object.
+    component->userdata = this; // c_port_callback needs this to find this object.
 }
 
 MMALComponent::~MMALComponent()
@@ -51,15 +51,15 @@ MMALComponent::~MMALComponent()
     }
 }
 
-void MMALComponent::enable_port_with_callback(MMAL_PORT_T *port)
+void MMALComponent::enablePort(MMAL_PORT_T *port)
 {
-    MMALException::throw_if(mmal_port_enable(port, c_callback), "Failed to enable port");
+    MMALException::throw_if(mmal_port_enable(port, c_port_callback), "Failed to enable port");
 }
 
-void MMALComponent::c_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
+void MMALComponent::c_port_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
     MMALComponent *p = dynamic_cast<MMALComponent *>(port->component->userdata);
-    p->callback(port, buffer);
+    p->port_callback(port, buffer);
 }
 
 /**
@@ -70,7 +70,7 @@ void MMALComponent::c_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
  * @param port Pointer to port from which callback originated
  * @param buffer mmal buffer header pointer
  */
-void MMALComponent::callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
+void MMALComponent::port_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
 {
     mmal_buffer_header_mem_lock(buffer);
 
@@ -125,3 +125,12 @@ void MMALComponent::disconnect()
    MMALException::throw_if(mmal_connection_destroy(connection), "Failed to release connection");
    connection = nullptr;
 }
+
+void MMALComponent::add_buffer_listener(MMALBufferListener *l)
+{
+    if (l == nullptr) {
+        throw MMALException("Null pointer passed to MMALComponent::add_buffer_listener");
+    }
+    buffer_listeners.push_back(l);
+}
+

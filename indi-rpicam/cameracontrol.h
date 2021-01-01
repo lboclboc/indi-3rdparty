@@ -35,20 +35,18 @@ class Pipeline;
 
 /**
  * @brief The CameraControl class Initializes all MMAL components and connections.
- * Also sets up handles callbacks to receivers of the image.
+ * Also sets up and handles callbacks to receivers of the image.
  */
 class CameraControl : MMALBufferListener
 {
 public:
     CameraControl();
     virtual ~CameraControl();
-    void start_capture();
-    void stop_capture();
+    void startCapture();
+    void stopCapture();
     MMALCamera *get_camera() { return camera.get(); }
     void add_pipeline(Pipeline *p) { pipelines.insert(p); }
-    void erase_pipeline(Pipeline *p) { pipelines.erase(p); }
     void add_capture_listener(CaptureListener *c) { capture_listeners.insert(c); }
-    void erase_capture_listener(CaptureListener *c) { capture_listeners.insert(c); }
 
 private:
     virtual void buffer_received(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer) override;
