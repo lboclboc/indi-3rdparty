@@ -170,7 +170,7 @@ TEST(TestCameraControl, save_raw_picture)
 {
     TestCameraControl c;
     long long photons;
-    photons = c.testCapture(400, 2, 500000L, "out/raw.data");
+    photons = c.testCapture(400, 2, 500000L, "out/imx477-raw.data");
 }
 
 TEST(TestCameraControl, double_exposure_time_sub_second)
@@ -221,11 +221,11 @@ TEST(TestCameraControl, subframe)
 
     TestCameraControl c(&ccd);
 
-    unlink("out/subframe.data");
-    c.testCapture(400, 2, 600000L, "out/subframe.data");
+    unlink("out/imx477-subframe.data");
+    c.testCapture(400, 2, 600000L, "out/imx477-subframe.data");
 
     struct stat statbuf;
-    EXPECT_EQ(stat("out/subframe.data", &statbuf), 0);
+    EXPECT_EQ(stat("out/imx477-subframe.data", &statbuf), 0);
     EXPECT_EQ(statbuf.st_size, w * h * 2);
 }
 
@@ -247,7 +247,6 @@ TEST(TestCameraControl, double_iso)
 int main(int argc, char **argv)
 {
     fprintf(stderr, "Main started\n");
-    fprintf(stderr, "Bias photons: %lld\n", get_bias_photons());
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::InitGoogleMock(&argc, argv);
 

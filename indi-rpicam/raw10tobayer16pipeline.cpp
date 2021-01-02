@@ -56,9 +56,7 @@ void Raw10ToBayer16Pipeline::data_received(uint8_t *data,  uint32_t length)
         }
 
         if (raw_x >= minRawX && x < maxX && y < maxY) {
-            uint16_t *cur_row = reinterpret_cast<uint16_t *>(ccd->getFrameBuffer()) + y * ccd->getXRes();
-
-            assert((cur_row - reinterpret_cast<uint16_t *>(ccd->getFrameBuffer())) % 3280 == 0);
+            uint16_t *cur_row = reinterpret_cast<uint16_t *>(ccd->getFrameBuffer()) + y * ccd->getSubW();
 
             // RAW according to experiment.
             switch(state)

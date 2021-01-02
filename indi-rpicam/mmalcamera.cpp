@@ -151,8 +151,9 @@ void MMALCamera::setExposureParameters(double gain, uint32_t shutter_speed)
     // Gain settings
     MMALException::throw_if(mmal_port_parameter_set_rational(component->control, MMAL_PARAMETER_ANALOG_GAIN, MMAL_RATIONAL_T {static_cast<int32_t>(gain * 65536), 65536}),
                             "Failed to set analog gain");
-    LOGF_TEST("shutter speed after setting gain: %d", getShutterSpeed());
-    LOGF_TEST("gain set to %d/%d", (int)(gain*65536), 65536);
+    MMAL_RATIONAL_T actual_gain;
+    MMALException::throw_if(mmal_port_parameter_get_rational(component->control, MMAL_PARAMETER_ANALOG_GAIN, &actual_gain), "failed to get gain");
+    LOGF_TEST("gain set to %d/%d", actual_gain.num, actual_gain.den);
 }
 
 uint32_t MMALCamera::getShutterSpeed()

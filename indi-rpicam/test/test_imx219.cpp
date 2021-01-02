@@ -22,14 +22,21 @@ using ::testing::StrEq;
 class MockCCD : public ChipWrapper
 {
 public:
-    MockCCD()
+
+    MockCCD(int x=0, int y=0, int w=3280, int h=2464)
     {
+        subx = x;
+        suby = y;
+        subw = w;
+        subh = h;
         width = 3280;
         height = 2464;
         bpp = 16;
         frameBufferSize = width * height * (bpp / 8);
         frameBuffer = reinterpret_cast<uint8_t *>(calloc(frameBufferSize, 1));
     }
+
+    virtual ~MockCCD() { }
 
     virtual int getFrameBufferSize() override {
         return frameBufferSize;
@@ -39,10 +46,15 @@ public:
         return frameBuffer;
     }
 
+    virtual int getSubX() override { return subx; }
+    virtual int getSubY() override { return subx; }
+    virtual int getSubW() override { return subw; }
+    virtual int getSubH() override { return subh; }
     virtual int getXRes() override { return width; }
     virtual int getYRes() override { return height; }
 
 private:
+    int subx, suby, subw, subh;
     int width;
     int height;
     int bpp;
@@ -55,31 +67,38 @@ private:
 class TestCameraControl : public CameraControl, CaptureListener
 {
 public:
-    TestCameraControl()
+    TestCameraControl(MockCCD *_ccd = nullptr) : ccd(_ccd)
     {
+        if (ccd == nullptr) {
+            ccd = new MockCCD();
+            freeccd = true;
+        }
+
         add_capture_listener(this);
     }
 
     ~TestCameraControl()
     {
+        if(freeccd) {
+            delete ccd;
+        }
     }
 
     long long testCapture(int iso, int gain, long shutter_speed, const char *fname = nullptr)
     {
-        MockCCD ccd;
 #ifndef USE_ISO
         fprintf(stderr, "(not using iso parameter %d)\n", iso);
 #endif
 
-        EXPECT_NE(ccd.getFrameBuffer(), nullptr);
-        fprintf(stderr, "ccd: xres=%d, yres=%d\n", ccd.getXRes(), ccd.getYRes());
+        EXPECT_NE(ccd->getFrameBuffer(), nullptr);
+        fprintf(stderr, "ccd: xres=%d, yres=%d\n", ccd->getXRes(), ccd->getYRes());
 
         JpegPipeline raw_pipe;
 
         BroadcomPipeline *brcm_pipe = new BroadcomPipeline();
         raw_pipe.daisyChain(brcm_pipe);
 
-        Raw10ToBayer16Pipeline *raw10_pipe = new Raw10ToBayer16Pipeline(brcm_pipe, &ccd);
+        Raw10ToBayer16Pipeline *raw10_pipe = new Raw10ToBayer16Pipeline(brcm_pipe, ccd);
         brcm_pipe->daisyChain(raw10_pipe);
 
         add_pipeline(&raw_pipe);
@@ -102,14 +121,14 @@ public:
         // Dump raw-file if requested.
         if (fname) {
             auto out = std::ofstream(fname);
-            out.write(reinterpret_cast<const char *>(ccd.getFrameBuffer()), ccd.getFrameBufferSize());
+            out.write(reinterpret_cast<const char *>(ccd->getFrameBuffer()), ccd->getFrameBufferSize());
             out.close();
         }
 
         // Calculate some number proportional to the number of photons collected.
         long long photons = 0;
-        const uint16_t *p = reinterpret_cast<const uint16_t *>(ccd.getFrameBuffer());
-        const uint16_t *end = reinterpret_cast<const uint16_t *>(ccd.getFrameBuffer() + ccd.getFrameBufferSize());
+        const uint16_t *p = reinterpret_cast<const uint16_t *>(ccd->getFrameBuffer());
+        const uint16_t *end = reinterpret_cast<const uint16_t *>(ccd->getFrameBuffer() + ccd->getFrameBufferSize());
         while(p < end) {
             photons += *p++;
         }
@@ -124,10 +143,11 @@ public:
 
 private:
     bool done {false};
+    MockCCD *ccd {0};
+    bool freeccd {false};
 };
 // }}}
 
-long long photonsbias = 0;
 long long photons01s1g = 0;
 long long photons01s2g = 0;
 long long photons02s1g = 0;
@@ -139,24 +159,28 @@ long long photons2s2g = 0;
 
 
 // Grap a picture with very low exposure to work as a dark/bias base.
-void get_bias_photons()
+long long get_bias_photons()
 {
-    TestCameraControl c;
-    photonsbias = c.testCapture(400, 1, 1L);
+    static long long bias = 0;
+    if (bias == 0) {
+	    TestCameraControl c;
+	    bias = c.testCapture(400, 1, 1L);
+    }
+    return bias;
 }
 
 TEST(TestCameraControl, save_raw_picture)
 {
     TestCameraControl c;
     long long photons;
-    photons = c.testCapture(400, 5, 100000L, "out/raw.data");
+    photons = c.testCapture(400, 5, 100000L, "out/imx219-raw.data");
 }
 
 TEST(TestCameraControl, double_exposure_time_sub_second)
 {
     TestCameraControl c;
-    if (photons01s1g == 0) photons01s1g = c.testCapture(400, 1, 100000L) - photonsbias;
-    if (photons02s1g == 0) photons02s1g = c.testCapture(400, 1, 200000L) - photonsbias;
+    if (photons01s1g == 0) photons01s1g = c.testCapture(400, 1, 100000L) - get_bias_photons();
+    if (photons02s1g == 0) photons02s1g = c.testCapture(400, 1, 200000L) - get_bias_photons();
 
     int relation = (int)((100 * photons02s1g) / photons01s1g);
     EXPECT_GT(relation, 120);
@@ -170,8 +194,8 @@ TEST(TestCameraControl, double_exposure_time_seconds)
     // For some reason the HIQ-camera needs one extra exposure before using long exposure. But only for the first long exposure...
     fprintf(stderr, "Taking one extra 20s capture..\n");
     c.testCapture(400, 1, 20000000L);
-    if (photons1s1g == 0) photons1s1g = c.testCapture(400, 1, 1000000L) - photonsbias;
-    if (photons2s1g == 0) photons2s1g = c.testCapture(400, 1, 2000000L) - photonsbias;
+    if (photons1s1g == 0) photons1s1g = c.testCapture(400, 1, 1000000L) - get_bias_photons();
+    if (photons2s1g == 0) photons2s1g = c.testCapture(400, 1, 2000000L) - get_bias_photons();
 
     int relation = (int)((100 * photons2s1g) / photons1s1g);
     EXPECT_GT(relation, 120);
@@ -183,8 +207,8 @@ TEST(TestCameraControl, double_exposure_time_seconds)
 TEST(TestCameraControl, double_gain)
 {
     TestCameraControl c;
-    if (photons01s1g == 0) photons01s1g = c.testCapture(400, 1, 100000L) - photonsbias;
-    if (photons01s2g == 0) photons01s2g = c.testCapture(400, 2, 100000L) - photonsbias;
+    if (photons01s1g == 0) photons01s1g = c.testCapture(400, 1, 100000L) - get_bias_photons();
+    if (photons01s2g == 0) photons01s2g = c.testCapture(400, 2, 100000L) - get_bias_photons();
 
     int relation = (int)((100 * photons01s2g) / photons01s1g);
     EXPECT_GT(relation, 120);
@@ -192,13 +216,29 @@ TEST(TestCameraControl, double_gain)
     fprintf(stderr, "0.2s exposure is %d%% brighter than 0.1s\n", relation - 100);
 }
 
+TEST(TestCameraControl, subframe)
+{
+    int w = 640;
+    int h = 480;
+    MockCCD ccd(100, 100, w, h);
+
+    TestCameraControl c(&ccd);
+
+    unlink("out/imx219-subframe.data");
+    c.testCapture(400, 2, 600000L, "out/imx219-subframe.data");
+
+    struct stat statbuf;
+    EXPECT_EQ(stat("out/imx219-subframe.data", &statbuf), 0);
+    EXPECT_EQ(statbuf.st_size, w * h * 2);
+}
+
 #ifdef USE_ISO
 TEST(TestCameraControl, double_iso)
 {
     TestCameraControl c;
     long long photons1, photons2;
-    photons1 = c.testCapture(100, 1, 100000L) - photonsbias;
-    photons2 = c.testCapture(800, 1, 100000L) - photonsbias;
+    photons1 = c.testCapture(100, 1, 100000L) - get_bias_photons();
+    photons2 = c.testCapture(800, 1, 100000L) - get_bias_photons();
 
     int relation = (int)((100 * photons2) / photons1);
     EXPECT_GT(relation, 120);
@@ -210,8 +250,6 @@ TEST(TestCameraControl, double_iso)
 int main(int argc, char **argv)
 {
     fprintf(stderr, "Main started\n");
-    get_bias_photons();
-    fprintf(stderr, "Bias photons: %lld\n", photonsbias);
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::InitGoogleMock(&argc, argv);
 
