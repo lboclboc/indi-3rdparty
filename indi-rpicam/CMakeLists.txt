@@ -49,12 +49,12 @@ set(LIB_RPICAM_SRCS
    ${CMAKE_CURRENT_SOURCE_DIR}/pipetee.cpp
 )
 
-add_library(lib_rpicam STATIC ${LIB_RPICAM_SRCS})
+add_library(rpicam STATIC ${LIB_RPICAM_SRCS})
 
 add_executable(indi_rpicam ${CMAKE_CURRENT_SOURCE_DIR}/indi_rpicam.cpp)
 
 target_link_libraries(indi_rpicam
-    lib_rpicam
+    rpicam
     ${INDI_DRIVER_LIBRARIES}
     ${CFITSIO_LIBRARIES}
     ${INDI_LIBRARIES}

@@ -31,7 +31,7 @@ if (NOT MSVC)
 endif()
 
 SET (test_libs
-        lib_rpicam
+        rpicam
         ${INDI_DRIVER_LIBRARIES}
         ${CFITSIO_LIBRARIES}
         ${GTEST_BOTH_LIBRARIES}
