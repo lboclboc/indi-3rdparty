@@ -62,6 +62,10 @@ private:
     bool print_first {true};
     double gain {1};
     uint32_t shutter_speed {100000};
+
+#ifndef NDEBUG
+    std::chrono::duration <double> buffer_processing_time {};
+#endif
 };
 
 #endif // CAMERACONTROL_H

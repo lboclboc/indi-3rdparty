@@ -60,6 +60,8 @@ void CameraControl::startCapture()
         throw MMALException("No capture listeners registered, refusing to do capture.");
     }
 
+    buffer_processing_time = std::chrono::duration<double>::zero();
+
     camera->startCapture();
 
     start_time = std::chrono::steady_clock::now();
@@ -68,6 +70,7 @@ void CameraControl::startCapture()
 
 void CameraControl::stopCapture()
 {
+    LOGF_TEST("total time consumed by buffer processing: %f", buffer_processing_time.count());
     camera->stopCapture();
     std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
     LOGF_TEST("exposure stopped after %f s", diff.count());
@@ -98,6 +101,10 @@ void CameraControl::buffer_received(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buf
 
 void CameraControl::signal_data_received(uint8_t *data, uint32_t length)
 {
+#ifndef NDEBUG
+    std::chrono::steady_clock::time_point buffer_start_time = std::chrono::steady_clock::now();
+#endif
+
     if (print_first) {
         std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
         LOGF_TEST("first buffer received after %f s", diff.count());
@@ -107,6 +114,10 @@ void CameraControl::signal_data_received(uint8_t *data, uint32_t length)
     for(auto p : pipelines) {
         p->data_received(data, length);
     }
+
+#ifndef NDEBUG
+    buffer_processing_time += std::chrono::steady_clock::now() - buffer_start_time;
+#endif
 }
 
 void CameraControl::signal_complete()
