@@ -62,8 +62,7 @@ MMALEncoder::MMALEncoder() : MMALComponent(MMAL_COMPONENT_DEFAULT_IMAGE_ENCODER)
     status = mmal_port_parameter_set_uint32(output, MMAL_PARAMETER_JPEG_RESTART_INTERVAL, 0);
     MMALException::throw_if(status, "Failed to set JPEG restart interval");
 
-    status = mmal_component_enable(component);
-    MMALException::throw_if(status, "Failed enable encoder");
+    enableComponent();
 
     pool = mmal_port_pool_create(output, output->buffer_num, output->buffer_size);
     if (pool== nullptr) {

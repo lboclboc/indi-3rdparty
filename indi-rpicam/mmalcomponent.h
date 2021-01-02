@@ -67,6 +67,9 @@ public:
      */
     void add_buffer_listener(MMALBufferListener *l);
 
+    /** Enable this mmal component. */
+    void enableComponent();
+
 protected:
     virtual void port_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
     virtual void return_buffer(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);

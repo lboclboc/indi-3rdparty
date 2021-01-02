@@ -27,6 +27,7 @@
 #include "cameracontrol.h"
 #include "mmalexception.h"
 #include "pipeline.h"
+#include "inditest.h"
 
 CameraControl::CameraControl()
 {
@@ -51,7 +52,6 @@ void CameraControl::startCapture()
 
     camera->setExposureParameters();
 
-
     encoder->activate();
     if (capture_listeners.size() == 0) {
         throw std::runtime_error("No capture listeners registered, start_capture not possible.");
@@ -66,7 +66,7 @@ void CameraControl::stopCapture()
 {
     camera->stopCapture();
     std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
-    fprintf(stderr, "%s: exposure stopped after %f s\n", __FUNCTION__, diff.count());
+    LOGF_TEST("exposure stopped after %f s\n", diff.count());
 }
 
 /**
@@ -95,7 +95,7 @@ void CameraControl::signal_data_received(uint8_t *data, uint32_t length)
 {
     if (print_first) {
         std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
-        fprintf(stderr, "%s: first buffer received after %f s\n", __FUNCTION__, diff.count());
+        LOGF_TEST("first buffer received after %f s\n", diff.count());
         print_first = false;
     }
 
@@ -107,7 +107,7 @@ void CameraControl::signal_data_received(uint8_t *data, uint32_t length)
 void CameraControl::signal_complete()
 {
     std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
-    fprintf(stderr, "%s: all buffers received after %f s\n", __FUNCTION__, diff.count());
+    LOGF_TEST("all buffers received after %f s\n", diff.count());
     for(auto p : capture_listeners) {
         p->capture_complete();
     }

@@ -62,7 +62,6 @@ public:
 
     ~TestCameraControl()
     {
-        erase_capture_listener(this);
     }
 
     long long testCapture(int iso, int gain, long shutter_speed, const char *fname = nullptr)
@@ -89,11 +88,11 @@ public:
 #ifdef USE_ISO
         camera->set_iso(iso);
 #endif
-        camera->set_gain(gain);
-        camera->set_shutter_speed(shutter_speed);
+        camera->setGain(gain);
+        camera->setShutterSpeed(shutter_speed);
 
         done = false;
-        start_capture();
+        startCapture();
 
         // Wait for end of capture.
         while(!done) {
@@ -116,8 +115,6 @@ public:
         while(p < end) {
             photons += *p++;
         }
-
-        erase_pipeline(&raw_pipe);
 
         return photons;
     }

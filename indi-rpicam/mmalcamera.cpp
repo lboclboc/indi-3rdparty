@@ -28,10 +28,11 @@
 #include "mmalcamera.h"
 #include "mmalexception.h"
 #include "mmalencoder.h"
+#include "inditest.h"
 
 MMALCamera::MMALCamera(int n) : MMALComponent(MMAL_COMPONENT_DEFAULT_CAMERA), cameraNum(n)
 {
-    fprintf(stderr, "%s()", __FUNCTION__);
+    LOG_TEST("entered");
 
     selectCameraNumber(cameraNum);
 
@@ -47,7 +48,7 @@ MMALCamera::MMALCamera(int n) : MMALComponent(MMAL_COMPONENT_DEFAULT_CAMERA), ca
     // FIXME: moved from #001 to after sensor Enable the controlport so calls below works.
     enablePort(component->control);
 
-    fprintf(stderr, "MMALCamera: fps_low=%d/%d, fps_high=%d/%d\n", fps_low.num, fps_low.den, fps_high.num, fps_high.den);
+    LOGF_TEST("fps_low=%d/%d, fps_high=%d/%d\n", fps_low.num, fps_low.den, fps_high.num, fps_high.den);
 }
 
 MMALCamera::~MMALCamera()
@@ -69,10 +70,10 @@ MMALCamera::~MMALCamera()
  */
 void MMALCamera::startCapture()
 {
-    MMALException::throw_if(mmal_component_enable(component), "camera component couldn't be enabled");
+    enableComponent();
 
     // Start capturing.
-    fprintf(stderr, "%s: Starting capture with speed %d\n", __FUNCTION__, shutter_speed);
+    LOGF_TEST("starting capture with speed %d\n", getShutterSpeed());
     MMALException::throw_if(mmal_port_parameter_set_boolean(component->output[CAPTURE_PORT_NO], MMAL_PARAMETER_CAPTURE, 1), "Failed to start capture");
 }
 
@@ -85,10 +86,10 @@ void MMALCamera::stopCapture()
     status = mmal_component_disable(component);
     MMALException::throw_if(status, "camera component couldn't be disabled");
 
-    fprintf(stderr, "%s: Capture stopped\n", __FUNCTION__);
+    LOG_TEST("capture stopped\n");
 }
 
-void MMALCamera::setExposureParameters()
+void MMALCamera::setExposureParameters(double gain, uint32_t shutter_speed)
 {
     MMAL_PARAMETER_AWBMODE_T awb = {{MMAL_PARAMETER_AWB_MODE,sizeof awb}, MMAL_PARAM_AWBMODE_AUTO};
     MMALException::throw_if(mmal_port_parameter_set(component->control, &awb.hdr), "Failed to set AWB mode");
@@ -99,7 +100,7 @@ void MMALCamera::setExposureParameters()
 
 #ifdef USE_ISO
     MMALException::throw_if(mmal_port_parameter_set_uint32(component->control, MMAL_PARAMETER_ISO, iso), "Failed to set ISO");
-    fprintf(stderr, "%s: ISO set to %d\n", __FUNCTION__, iso);
+    LOGF_TEST("ISO set to %d\n", iso);
 #endif
 
     MMALException::throw_if(mmal_port_parameter_set_rational(component->control, MMAL_PARAMETER_BRIGHTNESS, MMAL_RATIONAL_T{50, 100}), "Failed to set brightness");
@@ -134,13 +135,13 @@ void MMALCamera::setExposureParameters()
         low = fps_low;
         high = fps_high;
     }
-    fprintf(stderr, "%s: setting fps range %d/%d -> %d/%d\n", __FUNCTION__, low.num, low.den, high.num, high.den);
+    LOGF_TEST("setting fps range %d/%d -> %d/%d\n", low.num, low.den, high.num, high.den);
     MMAL_PARAMETER_FPS_RANGE_T fps_range = {{MMAL_PARAMETER_FPS_RANGE, sizeof(fps_range)}, low, high};
     MMALException::throw_if(mmal_port_parameter_set(component->output[CAPTURE_PORT_NO], &fps_range.hdr), "Failed to set FPS range");
     MMALException::throw_if(mmal_port_parameter_get(component->output[CAPTURE_PORT_NO], &fps_range.hdr), "Failed to get FPS range");
     if (fps_range.fps_low.num != low.num || fps_range.fps_low.den != low.den || 
         fps_range.fps_high.num != high.num || fps_range.fps_high.den != high.den) {
-        fprintf(stderr, "%s: failed to set fps ranges: low range is %d/%d, high range is %d/%d\n", __FUNCTION__,
+        LOGF_TEST("failed to set fps ranges: low range is %d/%d, high range is %d/%d\n",
                 fps_range.fps_low.num, fps_range.fps_low.den, fps_range.fps_high.num, fps_range.fps_high.den);
     }
 
@@ -149,17 +150,18 @@ void MMALCamera::setExposureParameters()
     uint32_t actual_shutter_speed;
     actual_shutter_speed = getShutterSpeed();
     if (actual_shutter_speed < shutter_speed - 100000 || actual_shutter_speed > shutter_speed + 100000) {
-        fprintf(stderr, "%s: Failed to set shutter speed, requested %d but actual value is %d\n", __FUNCTION__, shutter_speed, actual_shutter_speed); 
+        LOGF_TEST("Failed to set shutter speed, requested %d but actual value is %d\n", shutter_speed, actual_shutter_speed); 
     }
     else {
-        fprintf(stderr, "%s: shutter speed set to %d\n", __FUNCTION__, actual_shutter_speed); 
+        LOGF_TEST("shutter speed set to %d\n", actual_shutter_speed); 
     }
 
     // Gain settings
     MMALException::throw_if(mmal_port_parameter_set_rational(component->control, MMAL_PARAMETER_ANALOG_GAIN, MMAL_RATIONAL_T {static_cast<int32_t>(gain * 65536), 65536}),
                             "Failed to set analog gain");
-    fprintf(stderr, "%s: Gain set to %d/%d\n", __FUNCTION__, (int)(gain*65536), 65536);
+    LOGF_TEST("gain set to %d/%d\n", (int)(gain*65536), 65536);
 
+    enableComponent();
 }
 
 uint32_t MMALCamera::getShutterSpeed()
@@ -174,6 +176,8 @@ uint32_t MMALCamera::getShutterSpeed()
  */
 void MMALCamera::setCapturePortFormat()
 {
+    assert(component->output[CAPTURE_PORT_NO]->is_enabled != 0);
+
     // Set our stills format on the stills (for encoder) port
     MMAL_ES_FORMAT_T *format {component->output[CAPTURE_PORT_NO]->format};
 
@@ -258,7 +262,7 @@ void MMALCamera::getSensorInfo()
         throw MMALException("Unsupported camera");
     }
 
-    fprintf(stderr, "%s: width=%d, height=%d\n", __FUNCTION__, width, height);
+    LOGF_TEST("width=%d, height=%d\n", width, height);
 }
 
 /*

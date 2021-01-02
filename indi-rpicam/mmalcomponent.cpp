@@ -27,6 +27,7 @@
 #include <mmal_component.h>
 #include <mmal_connection.h>
 
+#include "inditest.h"
 #include "mmalcomponent.h"
 #include "mmalexception.h"
 #include "mmalbufferlistener.h"
@@ -134,3 +135,8 @@ void MMALComponent::add_buffer_listener(MMALBufferListener *l)
     buffer_listeners.push_back(l);
 }
 
+void MMALComponent::enableComponent()
+{
+    LOGF_TEST("enabling %s\n", component->name);
+    MMALException::throw_if(mmal_component_enable(component), "Failed enable encoder");
+}

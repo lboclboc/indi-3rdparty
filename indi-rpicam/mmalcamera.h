@@ -45,16 +45,12 @@ public:
     static const int VIDEO_PORT_NO {1};
     static const int CAPTURE_PORT_NO {2};
 
-    /** Request specific shutter speed. */
-    void setShutterSpeed(uint32_t shutter_speed)  { this->shutter_speed = shutter_speed; }
-    
     /** Return the current active shutter speed for camera.h */
     uint32_t getShutterSpeed();
 
 #ifdef USE_ISO
     void setISO(int iso) { this->iso = iso; }
 #endif
-    void setGain(double gain) { this->gain = gain; }
     void startCapture();
     void stopCapture();
     uint32_t get_width() { return width; }
@@ -62,7 +58,7 @@ public:
     const char *getModel() { return cameraModel; }
 
     void setCapturePortFormat();
-    void setExposureParameters();
+    void setExposureParameters(double gain, uint32_t shutter_speed);
     void getSensorInfo();
     void selectCameraNumber(uint32_t n);
     void selectSensorConfig(uint32_t config);
@@ -75,9 +71,7 @@ public:
 private:
     int32_t cameraNum {};
     char cameraModel[MMAL_PARAMETER_CAMERA_INFO_MAX_STR_LEN] {""};
-    uint32_t shutter_speed {100000};
     unsigned int iso {0};
-    double gain {1};
     uint32_t width {};
     uint32_t height {};
     MMAL_RATIONAL_T fps_low {}, fps_high {};

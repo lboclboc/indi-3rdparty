@@ -61,3 +61,9 @@ private:
 };
 
 #endif // CAMERACONTROL_H
+    void setShutterSpeed(uint32_t shutter_speed)  { this->shutter_speed = shutter_speed; }
+    void setGain(double gain) { this->gain = gain; }
+    void setGain(double gain) { this->gain = gain; }
+    double gain {1};
+    void setShutterSpeed(uint32_t shutter_speed)  { this->shutter_speed = shutter_speed; }
+    uint32_t shutter_speed {100000};
