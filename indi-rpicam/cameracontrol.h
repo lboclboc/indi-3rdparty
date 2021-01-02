@@ -47,6 +47,8 @@ public:
     MMALCamera *get_camera() { return camera.get(); }
     void add_pipeline(Pipeline *p) { pipelines.insert(p); }
     void add_capture_listener(CaptureListener *c) { capture_listeners.insert(c); }
+    void setGain(double gain) { this->gain = gain; }
+    void setShutterSpeed(uint32_t shutter_speed)  { this->shutter_speed = shutter_speed; }
 
 private:
     virtual void buffer_received(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer) override;
@@ -58,12 +60,8 @@ private:
     void signal_data_received(uint8_t *data, uint32_t length);
     std::chrono::steady_clock::time_point start_time;
     bool print_first {true};
+    double gain {1};
+    uint32_t shutter_speed {100000};
 };
 
 #endif // CAMERACONTROL_H
-    void setShutterSpeed(uint32_t shutter_speed)  { this->shutter_speed = shutter_speed; }
-    void setGain(double gain) { this->gain = gain; }
-    void setGain(double gain) { this->gain = gain; }
-    double gain {1};
-    void setShutterSpeed(uint32_t shutter_speed)  { this->shutter_speed = shutter_speed; }
-    uint32_t shutter_speed {100000};

@@ -55,18 +55,6 @@ MMALDriver::MMALDriver() : INDI::CCD(), chipWrapper(&PrimaryCCD)
     // Register our application with the logging system
     vcos_log_register("indi_rpicam", &indi_rpicam_log_category);
 
-    camera_control.reset(new CameraControl());
-
-    //    // FIXME: Seems the HIQ-camera is quite buggy, it needs the mmal_component to be opened twice
-    //    camera_control.reset(); // Since the reset below would allocate the second camera object before the first got deleted.
-    //    camera_control.reset(new CameraControl());
-
-    camera_control->add_capture_listener(this);
-
-    setupPipeline();
-
-    camera_control->add_pipeline(raw_pipe.get());
-
     LOGF_DEBUG("%s() - returning", __FUNCTION__);
 }
 
@@ -150,10 +138,28 @@ bool MMALDriver::Connect()
 
     SetTimer(POLLMS);
 
+    camera_control.reset(new CameraControl());
 
-    // Should probably not be called by the subclass of CCD - not clear.
-    UpdateCCDFrame(0, 0, static_cast<int>(camera_control->get_camera()->get_width()),
-                   static_cast<int>(camera_control->get_camera()->get_height()));
+    //    // FIXME: Seems the HIQ-camera is quite buggy, it needs the mmal_component to be opened twice
+    //    camera_control.reset(); // Since the reset below would allocate the second camera object before the first got deleted.
+    //    camera_control.reset(new CameraControl());
+
+    camera_control->add_capture_listener(this);
+
+    setupPipeline();
+
+    camera_control->add_pipeline(raw_pipe.get());
+
+
+    SetCCDParams(static_cast<int>(camera_control->get_camera()->get_width()),
+                 static_cast<int>(camera_control->get_camera()->get_height()),
+                 16,
+                 camera_control->get_camera()->xPixelSize,
+                 camera_control->get_camera()->yPixelSize);
+
+//    // Should probably not be called by the subclass of CCD - not clear.
+//    UpdateCCDFrame(0, 0, static_cast<int>(camera_control->get_camera()->get_width()),
+//                   static_cast<int>(camera_control->get_camera()->get_height()));
 
     return true;
 }
@@ -164,6 +170,8 @@ bool MMALDriver::Connect()
 bool MMALDriver::Disconnect()
 {
     LOGF_DEBUG("%s()", __FUNCTION__);
+
+    camera_control.reset();
 
     return true;
 }
@@ -224,11 +232,6 @@ bool MMALDriver::initProperties()
                      //	| CCD_HAS_WEB_SOCKET 	// Does the CCD support web socket transfers?
                     );
 
-    SetCCDParams(static_cast<int>(camera_control->get_camera()->get_width()),
-                 static_cast<int>(camera_control->get_camera()->get_height()),
-                 16,
-                 camera_control->get_camera()->xPixelSize,
-                 camera_control->get_camera()->yPixelSize);
 
     setDefaultPollingPeriod(500);
 

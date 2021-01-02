@@ -69,6 +69,7 @@ public:
     float xPixelSize {}, yPixelSize {};
 
 private:
+    virtual void return_buffer(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer) override { (void)port; (void)buffer; }
     int32_t cameraNum {};
     char cameraModel[MMAL_PARAMETER_CAMERA_INFO_MAX_STR_LEN] {""};
     unsigned int iso {0};

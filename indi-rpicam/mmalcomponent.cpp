@@ -52,9 +52,14 @@ MMALComponent::~MMALComponent()
     }
 }
 
-void MMALComponent::enablePort(MMAL_PORT_T *port)
+void MMALComponent::enablePort(MMAL_PORT_T *port, bool use_callback)
 {
-    MMALException::throw_if(mmal_port_enable(port, c_port_callback), "Failed to enable port");
+    if (use_callback) {
+        MMALException::throw_if(mmal_port_enable(port, c_port_callback), "Failed to enable port on component %s", component->name);
+    }
+    else {
+        MMALException::throw_if(mmal_port_enable(port, nullptr), "Failed to enable port on component %s", component->name);
+    }
 }
 
 void MMALComponent::c_port_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
@@ -91,18 +96,12 @@ void MMALComponent::port_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffe
     return_buffer(port, buffer);
 }
 
-void MMALComponent::return_buffer(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
-{
-    (void)port;
-    (void)buffer;
-    throw MMALException("MMALComponent::return_buffer: No one there to recyle buffers, please override this method.");
-}
-
 void MMALComponent::connect(int src_port, MMALComponent *dst, int dst_port)
 {
     MMAL_STATUS_T status;
 
     MMALException::throw_if(connection, "Only one connection supported");
+    assert(dst);
 
     status =  mmal_connection_create(&connection, component->output[src_port], dst->component->input[dst_port], MMAL_CONNECTION_FLAG_TUNNELLING | MMAL_CONNECTION_FLAG_ALLOCATION_ON_INPUT);
     MMALException::throw_if(status, "Failed to connect components");
@@ -120,7 +119,7 @@ void MMALComponent::connect(int src_port, MMALComponent *dst, int dst_port)
 void MMALComponent::disconnect()
 {
     if (!connection) {
-        return;
+        throw MMALException("%s: no connection found", __FUNCTION__);
     }
 
    MMALException::throw_if(mmal_connection_destroy(connection), "Failed to release connection");
@@ -137,6 +136,12 @@ void MMALComponent::add_buffer_listener(MMALBufferListener *l)
 
 void MMALComponent::enableComponent()
 {
-    LOGF_TEST("enabling %s\n", component->name);
-    MMALException::throw_if(mmal_component_enable(component), "Failed enable encoder");
+    LOGF_TEST("enabling %s", component->name);
+    MMALException::throw_if(mmal_component_enable(component), "Failed enable component %s", component->name);
+}
+
+void MMALComponent::disableComponent()
+{
+    LOGF_TEST("disabeling %s", component->name);
+    MMALException::throw_if(mmal_component_disable(component), "Failed enable component %s", component->name);
 }

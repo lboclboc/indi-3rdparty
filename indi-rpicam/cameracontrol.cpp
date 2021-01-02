@@ -33,31 +33,35 @@ CameraControl::CameraControl()
 {
     camera.reset(new MMALCamera(0));
 
+    camera->setCapturePortFormat();
+
     encoder.reset(new MMALEncoder());
     encoder->add_buffer_listener(this);
+    encoder->activate();
 
-    camera->connect(MMALCamera::CAPTURE_PORT_NO, encoder.get(), 0); // Connected the capture port to the encoder.
+    camera->enableComponent();
 }
 
 CameraControl::~CameraControl()
 {
-    camera->disconnect();
+    camera->disableComponent();
     encoder.reset();
 }
 
 void CameraControl::startCapture()
 {
+    camera->connect(MMALCamera::CAPTURE_PORT_NO, encoder.get(), 0); // Connected the capture port to the encoder.
 
-    camera->setCapturePortFormat();
+    camera->setExposureParameters(gain, shutter_speed);
 
-    camera->setExposureParameters();
+    LOGF_TEST("shutter speed after enabling camera: %d", camera->getShutterSpeed());
 
-    encoder->activate();
     if (capture_listeners.size() == 0) {
-        throw std::runtime_error("No capture listeners registered, start_capture not possible.");
+        throw MMALException("No capture listeners registered, refusing to do capture.");
     }
 
     camera->startCapture();
+
     start_time = std::chrono::steady_clock::now();
     print_first = true;
 }
@@ -66,7 +70,8 @@ void CameraControl::stopCapture()
 {
     camera->stopCapture();
     std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
-    LOGF_TEST("exposure stopped after %f s\n", diff.count());
+    LOGF_TEST("exposure stopped after %f s", diff.count());
+    camera->disconnect();
 }
 
 /**
@@ -95,7 +100,7 @@ void CameraControl::signal_data_received(uint8_t *data, uint32_t length)
 {
     if (print_first) {
         std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
-        LOGF_TEST("first buffer received after %f s\n", diff.count());
+        LOGF_TEST("first buffer received after %f s", diff.count());
         print_first = false;
     }
 
@@ -107,7 +112,7 @@ void CameraControl::signal_data_received(uint8_t *data, uint32_t length)
 void CameraControl::signal_complete()
 {
     std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
-    LOGF_TEST("all buffers received after %f s\n", diff.count());
+    LOGF_TEST("all buffers received after %f s", diff.count());
     for(auto p : capture_listeners) {
         p->capture_complete();
     }

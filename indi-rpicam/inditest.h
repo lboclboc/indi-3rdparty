@@ -29,8 +29,8 @@
 #include <stdio.h>
 
 #ifndef NDEBUG
-#define LOG_TEST(fmt) fprintf(stderr, "%s(%s:%d): " fmt, __FUNCTION__, __FILE__, __LINE__)
-#define LOGF_TEST(fmt, ...) fprintf(stderr, "%s(%s:%d): " fmt, __FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
+#define LOG_TEST(fmt) fprintf(stderr, "%s(%s:%d): " fmt "\n", __FUNCTION__, __FILE__, __LINE__)
+#define LOGF_TEST(fmt, ...) fprintf(stderr, "%s(%s:%d): " fmt "\n", __FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
 #else
 #define LOG_TEST(fmt, ...)
 #define LOGF_TEST(fmt, ...)

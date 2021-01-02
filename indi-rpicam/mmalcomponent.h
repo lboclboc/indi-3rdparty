@@ -70,10 +70,16 @@ public:
     /** Enable this mmal component. */
     void enableComponent();
 
+    /** Disable this mmal component. */
+    void disableComponent();
+
 protected:
     virtual void port_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
-    virtual void return_buffer(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer);
-    void enablePort(MMAL_PORT_T *port);
+
+    /** Enable the port, if use_callback the class callback method is used. */
+    void enablePort(MMAL_PORT_T *port, bool use_callback);
+
+    virtual void return_buffer(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer) = 0;
     MMAL_COMPONENT_T *component {};
     MMAL_CONNECTION_T *connection {};
 

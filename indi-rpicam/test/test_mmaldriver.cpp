@@ -71,8 +71,6 @@ public:
         fprintf(stderr, "(not using iso parameter %d)\n", iso);
 #endif
 
-        MMALCamera *camera = get_camera();
-
         EXPECT_NE(ccd.getFrameBuffer(), nullptr);
         fprintf(stderr, "ccd: xres=%d, yres=%d\n", ccd.getXRes(), ccd.getYRes());
 
@@ -88,8 +86,8 @@ public:
 #ifdef USE_ISO
         camera->set_iso(iso);
 #endif
-        camera->setGain(gain);
-        camera->setShutterSpeed(shutter_speed);
+        setGain(gain);
+        setShutterSpeed(shutter_speed);
 
         done = false;
         startCapture();
