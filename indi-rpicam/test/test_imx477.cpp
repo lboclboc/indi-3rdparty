@@ -78,6 +78,9 @@ public:
 
     ~TestCameraControl()
     {
+        if(freeccd) {
+            delete ccd;
+        }
     }
 
     long long testCapture(int iso, int gain, long shutter_speed, const char *fname = nullptr)
