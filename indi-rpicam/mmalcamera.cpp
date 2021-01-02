@@ -104,8 +104,7 @@ void MMALCamera::setExposureParameters(double gain, uint32_t shutter_speed)
     MMAL_PARAMETER_INPUT_CROP_T crop_param = {{MMAL_PARAMETER_INPUT_CROP, sizeof crop_param}, crop};
     MMALException::throw_if(mmal_port_parameter_set(component->control, &crop_param.hdr), "Failed to set ROI");
     MMALException::throw_if(mmal_port_parameter_get(component->control, &crop_param.hdr), "Failed to get ROI");
-    fprintf(stderr, "%s: Camera crop set to %d,%d,%d,%d\n", __FUNCTION__, crop_param.rect.x, crop_param.rect.y, crop_param.rect.width, crop_param.rect.height);
-
+    LOGF_TEST("Camera crop set to %d,%d,%d,%d\n", crop_param.rect.x, crop_param.rect.y, crop_param.rect.width, crop_param.rect.height);
 
     component->port[CAPTURE_PORT_NO]->buffer_size = component->port[CAPTURE_PORT_NO]->buffer_size_recommended;
 

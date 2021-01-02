@@ -50,10 +50,12 @@ public:
     void setGain(double gain) { this->gain = gain; }
     void setShutterSpeed(uint32_t shutter_speed)  { this->shutter_speed = shutter_speed; }
 
-private:
-    virtual void buffer_received(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer) override;
+protected: 
     std::unique_ptr<MMALCamera> camera {};
     std::unique_ptr<MMALEncoder> encoder {};
+    virtual void buffer_received(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer) override;
+
+private:
     std::unordered_set<Pipeline *> pipelines;
     std::unordered_set<CaptureListener *> capture_listeners;
     void signal_complete();

@@ -40,6 +40,10 @@ void Raw10ToBayer16Pipeline::data_received(uint8_t *data,  uint32_t length)
     assert(ccd->getXRes() == 3280);
     assert(ccd->getYRes() == 2464);
 
+    int maxX = ccd->getSubW();
+    int maxY = ccd->getSubH();
+    int minRawX = ccd->getSubX();
+
     uint8_t byte;
     for(;length; data++, length--)
     {
@@ -51,7 +55,7 @@ void Raw10ToBayer16Pipeline::data_received(uint8_t *data,  uint32_t length)
             raw_x = 0;
         }
 
-        if ( x < ccd->getXRes() && y < ccd->getYRes()) {
+        if (raw_x >= minRawX && x < maxX && y < maxY) {
             uint16_t *cur_row = reinterpret_cast<uint16_t *>(ccd->getFrameBuffer()) + y * ccd->getXRes();
 
             assert((cur_row - reinterpret_cast<uint16_t *>(ccd->getFrameBuffer())) % 3280 == 0);

@@ -86,8 +86,8 @@ public:
         fprintf(stderr, "(not using iso parameter %d)\n", iso);
 #endif
 
-        EXPECT_NE(ccd.getFrameBuffer(), nullptr);
-        fprintf(stderr, "ccd: xres=%d, yres=%d\n", ccd.getXRes(), ccd.getYRes());
+        EXPECT_NE(ccd->getFrameBuffer(), nullptr);
+        fprintf(stderr, "ccd: xres=%d, yres=%d\n", ccd->getXRes(), ccd->getYRes());
 
         JpegPipeline raw_pipe;
 
@@ -145,7 +145,6 @@ private:
 };
 // }}}
 
-long long photonsbias = 0;
 long long photons01s1g = 0;
 long long photons01s2g = 0;
 long long photons02s1g = 0;
@@ -157,10 +156,14 @@ long long photons2s2g = 0;
 
 
 // Grap a picture with very low exposure to work as a dark/bias base.
-void get_bias_photons()
+long long get_bias_photons()
 {
-    TestCameraControl c;
-    photonsbias = c.testCapture(400, 1, 1L);
+    static long long bias = 0;
+    if (bias == 0) {
+        TestCameraControl c;
+        bias = c.testCapture(400, 1, 1L);
+    }
+    return bias;
 }
 
 TEST(TestCameraControl, save_raw_picture)
@@ -173,8 +176,8 @@ TEST(TestCameraControl, save_raw_picture)
 TEST(TestCameraControl, double_exposure_time_sub_second)
 {
     TestCameraControl c;
-    if (photons01s1g == 0) photons01s1g = c.testCapture(400, 1, 100000L) - photonsbias;
-    if (photons02s1g == 0) photons02s1g = c.testCapture(400, 1, 200000L) - photonsbias;
+    if (photons01s1g == 0) photons01s1g = c.testCapture(400, 1, 100000L) - get_bias_photons();
+    if (photons02s1g == 0) photons02s1g = c.testCapture(400, 1, 200000L) - get_bias_photons();
 
     int relation = (int)((100 * photons02s1g) / photons01s1g);
     EXPECT_GT(relation, 120);
@@ -188,8 +191,8 @@ TEST(TestCameraControl, double_exposure_time_seconds)
     // For some reason the HIQ-camera needs one extra exposure before using long exposure. But only for the first long exposure...
     fprintf(stderr, "Taking one extra 20s capture..\n");
     c.testCapture(400, 1, 20000000L);
-    if (photons1s1g == 0) photons1s1g = c.testCapture(400, 1, 1000000L) - photonsbias;
-    if (photons2s1g == 0) photons2s1g = c.testCapture(400, 1, 2000000L) - photonsbias;
+    if (photons1s1g == 0) photons1s1g = c.testCapture(400, 1, 1000000L) - get_bias_photons();
+    if (photons2s1g == 0) photons2s1g = c.testCapture(400, 1, 2000000L) - get_bias_photons();
 
     int relation = (int)((100 * photons2s1g) / photons1s1g);
     EXPECT_GT(relation, 120);
@@ -201,8 +204,8 @@ TEST(TestCameraControl, double_exposure_time_seconds)
 TEST(TestCameraControl, double_gain)
 {
     TestCameraControl c;
-    if (photons01s1g == 0) photons01s1g = c.testCapture(400, 1, 100000L) - photonsbias;
-    if (photons01s2g == 0) photons01s2g = c.testCapture(400, 2, 100000L) - photonsbias;
+    if (photons01s1g == 0) photons01s1g = c.testCapture(400, 1, 100000L) - get_bias_photons();
+    if (photons01s2g == 0) photons01s2g = c.testCapture(400, 2, 100000L) - get_bias_photons();
 
     int relation = (int)((100 * photons01s2g) / photons01s1g);
     EXPECT_GT(relation, 120);
@@ -231,8 +234,8 @@ TEST(TestCameraControl, double_iso)
 {
     TestCameraControl c;
     long long photons1, photons2;
-    photons1 = c.testCapture(100, 1, 100000L) - photonsbias;
-    photons2 = c.testCapture(800, 1, 100000L) - photonsbias;
+    photons1 = c.testCapture(100, 1, 100000L) - get_bias_photons();
+    photons2 = c.testCapture(800, 1, 100000L) - get_bias_photons();
 
     int relation = (int)((100 * photons2) / photons1);
     EXPECT_GT(relation, 120);
@@ -244,8 +247,7 @@ TEST(TestCameraControl, double_iso)
 int main(int argc, char **argv)
 {
     fprintf(stderr, "Main started\n");
-    get_bias_photons();
-    fprintf(stderr, "Bias photons: %lld\n", photonsbias);
+    fprintf(stderr, "Bias photons: %lld\n", get_bias_photons());
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::InitGoogleMock(&argc, argv);
 
