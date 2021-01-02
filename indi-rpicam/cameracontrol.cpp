@@ -60,7 +60,9 @@ void CameraControl::startCapture()
         throw MMALException("No capture listeners registered, refusing to do capture.");
     }
 
+#ifndef NDEBUG
     buffer_processing_time = std::chrono::duration<double>::zero();
+#endif
 
     camera->startCapture();
 
