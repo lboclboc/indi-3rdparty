@@ -139,6 +139,7 @@ public:
     virtual void capture_complete() override
     {
         done = true;
+        stopCapture();
     }
 
 private:

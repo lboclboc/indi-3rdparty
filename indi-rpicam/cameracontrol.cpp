@@ -31,6 +31,7 @@
 
 CameraControl::CameraControl()
 {
+    LOG_TEST("enter");
     camera.reset(new MMALCamera(0));
 
     camera->setCapturePortFormat();
@@ -44,6 +45,7 @@ CameraControl::CameraControl()
 
 CameraControl::~CameraControl()
 {
+    LOG_TEST("enter");
     camera->disableComponent();
     encoder.reset();
 }

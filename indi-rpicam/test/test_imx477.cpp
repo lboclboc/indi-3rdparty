@@ -86,11 +86,11 @@ public:
     long long testCapture(int iso, int gain, long shutter_speed, const char *fname = nullptr)
     {
 #ifndef USE_ISO
-        fprintf(stderr, "(not using iso parameter %d)\n", iso);
+        printf("(not using iso parameter %d)\n", iso);
 #endif
 
         EXPECT_NE(ccd->getFrameBuffer(), nullptr);
-        fprintf(stderr, "ccd: xres=%d, yres=%d\n", ccd->getXRes(), ccd->getYRes());
+        printf("ccd: xres=%d, yres=%d\n", ccd->getXRes(), ccd->getYRes());
 
         JpegPipeline raw_pipe;
 
@@ -109,14 +109,15 @@ public:
         camera->set_crop(ccd->getSubX(), ccd->getSubY(), ccd->getSubW(), ccd->getSubH());
 
         done = false;
+        printf("Capture starting\n");
         startCapture();
 
         // Wait for end of capture.
         while(!done) {
-            fprintf(stderr, "Waiting for capture to finish...\n");
+            printf("Waiting for capture to finish...\n");
             sleep(1);
         }
-        fprintf(stderr, "Capture done\n");
+        printf("Capture done\n");
 
         // Dump raw-file if requested.
         if (fname) {
@@ -162,10 +163,12 @@ long long photons2s2g = 0;
 long long get_bias_photons()
 {
     static long long bias = 0;
+    printf("Getting bias....\n");
     if (bias == 0) {
         TestCameraControl c;
         bias = c.testCapture(400, 1, 1L);
     }
+    printf("Returnig bias....\n");
     return bias;
 }
 
@@ -185,14 +188,14 @@ TEST(TestCameraControl, double_exposure_time_sub_second)
     int relation = (int)((100 * photons02s1g) / photons01s1g);
     EXPECT_GT(relation, 120);
     EXPECT_LT(relation, 200);
-    fprintf(stderr, "0.2s exposure is %d%% brighter than 0.1s\n", relation - 100);
+    printf("0.2s exposure is %d%% brighter than 0.1s\n", relation - 100);
 }
 
 TEST(TestCameraControl, double_exposure_time_seconds)
 {
     TestCameraControl c;
     // For some reason the HIQ-camera needs one extra exposure before using long exposure. But only for the first long exposure...
-    fprintf(stderr, "Taking one extra 20s capture..\n");
+    printf("Taking one extra 20s capture..\n");
     c.testCapture(400, 1, 20000000L);
     if (photons1s1g == 0) photons1s1g = c.testCapture(400, 1, 1000000L) - get_bias_photons();
     if (photons2s1g == 0) photons2s1g = c.testCapture(400, 1, 2000000L) - get_bias_photons();
@@ -200,7 +203,7 @@ TEST(TestCameraControl, double_exposure_time_seconds)
     int relation = (int)((100 * photons2s1g) / photons1s1g);
     EXPECT_GT(relation, 120);
     EXPECT_LT(relation, 200);
-    fprintf(stderr, "0.2s exposure is %d%% brighter than 0.1s\n", relation - 100);
+    printf("0.2s exposure is %d%% brighter than 0.1s\n", relation - 100);
 }
 
 
@@ -213,7 +216,7 @@ TEST(TestCameraControl, double_gain)
     int relation = (int)((100 * photons01s2g) / photons01s1g);
     EXPECT_GT(relation, 120);
     EXPECT_LT(relation, 200);
-    fprintf(stderr, "0.2s exposure is %d%% brighter than 0.1s\n", relation - 100);
+    printf("0.2s exposure is %d%% brighter than 0.1s\n", relation - 100);
 }
 
 TEST(TestCameraControl, subframe)
@@ -243,15 +246,16 @@ TEST(TestCameraControl, double_iso)
     int relation = (int)((100 * photons2) / photons1);
     EXPECT_GT(relation, 120);
     EXPECT_LT(relation, 200);
-    fprintf(stderr, "0.2s exposure is %d%% brighter than 0.1s\n", relation - 100);
+    printf("0.2s exposure is %d%% brighter than 0.1s\n", relation - 100);
 }
 #endif
 
 int main(int argc, char **argv)
 {
-    fprintf(stderr, "Main started\n");
+    printf("Main started\n");
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::InitGoogleMock(&argc, argv);
 
+    get_bias_photons();
     return RUN_ALL_TESTS();
 }
