@@ -86,34 +86,34 @@ void Raw10ToBayer16Pipeline::data_received(uint8_t *data,  uint32_t length)
             case 0:
                 // FIXME: Optimize, if at least 5 bytes remaining here, all data can be calculated faster in one step.
 		// FIXME: upp the data to upper bits.
-                cur_row[x] = static_cast<uint16_t>(byte << 2);
+                cur_row[x] = static_cast<uint16_t>(byte << 8);
                 x++;
                 state = 1;
                 break;
 
             case 1:
-                cur_row[x] = static_cast<uint16_t>(byte << 2);
+                cur_row[x] = static_cast<uint16_t>(byte << 8);
                 x++;
                 state = 2;
                 break;
 
             case 2:
-                cur_row[x] = static_cast<uint16_t>(byte << 2);
+                cur_row[x] = static_cast<uint16_t>(byte << 8);
                 x++;
                 state = 3;
                 break;
 
             case 3:
-                cur_row[x] = static_cast<uint16_t>(byte << 2);
+                cur_row[x] = static_cast<uint16_t>(byte << 8);
                 x++;
                 state = 4;
                 break;
 
             case 4:
-                cur_row[x-4] |= byte & 0x03;
-                cur_row[x-3] |= (byte >> 2) & 0x03;
-                cur_row[x-2] |= (byte >> 4) & 0x03;
-                cur_row[x-1] |= (byte >> 6) & 0x03;
+                cur_row[x-4] |= (byte & 0x03) << 6;
+                cur_row[x-3] |= ((byte >> 2) & 0x03) << 6;
+                cur_row[x-2] |= ((byte >> 4) & 0x03) << 6;
+                cur_row[x-1] |= ((byte >> 6) & 0x03) << 6;
                 state = 0;
                 break;
             }
