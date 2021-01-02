@@ -47,8 +47,10 @@ private:
     int x {0};
     int y {0};
     int pos {0};
-    int raw_x {0};  // Position in the raw-data comming in.
-    enum {b0, b1, b2, b3, b4} state = b0; // Which byte in the RAW10 format.
+    int raw_x {0};  //! Position in the raw-data comming in.
+    int raw_y {0};  //! Position in the raw-data comming in.
+    int startRawX {0};
+    uint8_t state = 0; // Which byte in the RAW10 format.
 };
 
 #endif // RAW10TOBAYER16PIPELINE_H

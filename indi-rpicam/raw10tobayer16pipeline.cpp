@@ -25,13 +25,32 @@
 #include "broadcompipeline.h"
 #include "chipwrapper.h"
 
+/**
+ * Decoding the RAW11 format which is rows of:
+ * [ B1h ] [ G1h ] [ B2h ] [ G2h ] [ B1l | G1l | B2l | G2l ] ...
+ *
+ * h = high 8 bits, l = low 2 bits
+ *
+ * If subframes are used. The mapping from subframe image start x to first RAW12 x in received buffer is as:
+ * x pixel:     0  1  2  3  -  4  5  6  7  -
+ *                       |
+ *                       V
+ * Raw12 byte:  0  1  2  3  4  5  6  7  8  9  10 11
+ *              B1 G1 B2 G2 mix B  G  bg B  G  bg
+ *
+ * To simplify, start all raw lines on bayer group boundry
+ * startRawX = (getSubX() / 4) * 5
+ */
+
+
 void Raw10ToBayer16Pipeline::reset()
 {
     x = 0;
     y = 0;
     raw_x = 0;
-    pos = 0;
-    state = b0;
+    state = 0;
+    startRawX = (ccd->getSubX() / 4) * 5;
+    raw_y = 0;
 }
 
 void Raw10ToBayer16Pipeline::data_received(uint8_t *data,  uint32_t length)
@@ -42,7 +61,6 @@ void Raw10ToBayer16Pipeline::data_received(uint8_t *data,  uint32_t length)
 
     int maxX = ccd->getSubW();
     int maxY = ccd->getSubH();
-    int minRawX = ccd->getSubX();
 
     uint8_t byte;
     for(;length; data++, length--)
@@ -50,53 +68,57 @@ void Raw10ToBayer16Pipeline::data_received(uint8_t *data,  uint32_t length)
         byte = *data;
 
         if (raw_x >= bcm_pipe->header.omx_data.raw_width) {
-            y += 1;
             x = 0;
             raw_x = 0;
+            state = 0;
+	    raw_y++;
+            if (raw_y > ccd->getSubY()) {
+                y += 1;
+            }
         }
 
-        if (raw_x >= minRawX && x < maxX && y < maxY) {
+        if (raw_x >= startRawX && raw_y >= ccd->getSubY() && x < maxX && y < maxY) {
             uint16_t *cur_row = reinterpret_cast<uint16_t *>(ccd->getFrameBuffer()) + y * ccd->getSubW();
 
             // RAW according to experiment.
             switch(state)
             {
-            case b0:
+            case 0:
                 // FIXME: Optimize, if at least 5 bytes remaining here, all data can be calculated faster in one step.
+		// FIXME: upp the data to upper bits.
                 cur_row[x] = static_cast<uint16_t>(byte << 2);
                 x++;
-                state = b1;
+                state = 1;
                 break;
 
-            case b1:
+            case 1:
                 cur_row[x] = static_cast<uint16_t>(byte << 2);
                 x++;
-                state = b2;
+                state = 2;
                 break;
 
-            case b2:
+            case 2:
                 cur_row[x] = static_cast<uint16_t>(byte << 2);
                 x++;
-                state = b3;
+                state = 3;
                 break;
 
-            case b3:
+            case 3:
                 cur_row[x] = static_cast<uint16_t>(byte << 2);
                 x++;
-                state = b4;
+                state = 4;
                 break;
 
-            case b4:
+            case 4:
                 cur_row[x-4] |= byte & 0x03;
                 cur_row[x-3] |= (byte >> 2) & 0x03;
                 cur_row[x-2] |= (byte >> 4) & 0x03;
                 cur_row[x-1] |= (byte >> 6) & 0x03;
-                state = b0;
+                state = 0;
                 break;
             }
         }
 
-        pos++;
         raw_x++;
     }
 }
