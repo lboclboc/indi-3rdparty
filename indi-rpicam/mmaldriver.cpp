@@ -448,6 +448,9 @@ void MMALDriver::TimerHit()
             ccdBufferLock.unlock();
             InExposure = false;
 
+            // Stop capturing (must be done from main thread).
+            camera_control->stopCapture();
+
             // Let INDI::CCD know we're done filling the image buffer
             LOG_DEBUG("Exposure complete.");
             ExposureComplete(&PrimaryCCD);
