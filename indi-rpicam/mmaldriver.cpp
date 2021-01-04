@@ -567,6 +567,18 @@ void MMALDriver::setupPipeline()
         Raw12ToBayer16Pipeline *raw12_pipe = new Raw12ToBayer16Pipeline(brcm_pipe, &chipWrapper);
         brcm_pipe->daisyChain(raw12_pipe);
     }
+    else if (!strcmp(camera_control->get_camera()->getModel(), "ov5647")) {
+        
+
+        raw_pipe.reset(new JpegPipeline());
+
+        BroadcomPipeline *brcm_pipe = new BroadcomPipeline();
+        raw_pipe->daisyChain(brcm_pipe);
+
+        Raw10ToBayer16Pipeline *raw10_pipe = new Raw10ToBayer16Pipeline(brcm_pipe, &chipWrapper);
+        // receiver->daisyChain(&raw_writer);
+        brcm_pipe->daisyChain(raw10_pipe);
+    }    
     else if (!strcmp(camera_control->get_camera()->getModel(), "imx219"))
     {
         raw_pipe.reset(new JpegPipeline());
