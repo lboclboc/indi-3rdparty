@@ -41,7 +41,7 @@ void JpegPipeline::reset()
  void JpegPipeline::data_received(uint8_t *data,  uint32_t length)
 {
      uint8_t byte;
-     while(length > 0)
+     for(;length; data++, length--)
      {
         byte = *data;
         switch(state)
@@ -74,18 +74,7 @@ void JpegPipeline::reset()
             break;
 
         case State::SKIP_BYTES:
-	    if(skip_bytes <= length)
-	    {
-		length -= skip_bytes;
-		data += skip_bytes;
-		skip_bytes = 0;
-	    }
-	    else
-	    {
-		length = 0;
-		data += length;
-		skip_bytes -= length;
-	    }
+            skip_bytes--;
             if (skip_bytes == 0) {
                 if (entropy_data_follows) {
                     state = State::WANT_ENTROPY_DATA;
@@ -94,7 +83,7 @@ void JpegPipeline::reset()
                     state = State::WANT_FF;
                 }
             }
-            continue;
+            break;
 
         case State::WANT_ENTROPY_DATA:
             if (byte == 0xFF) {
@@ -132,7 +121,7 @@ void JpegPipeline::reset()
                 state = State::END_OF_JPEG;
                 break;
 
-            case 0xda: // SOS (Start of stream)
+            case 0xda: // SOS (Start of scan)
             case 0xc0: // Baseline DCT
             case 0xc4: // Huffman Table
                 entropy_data_follows = true;
@@ -150,7 +139,5 @@ void JpegPipeline::reset()
             }
             break;
         }
-	data++;
-	length--;
      }
 }
