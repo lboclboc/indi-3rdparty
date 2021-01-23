@@ -64,6 +64,7 @@ private:
     bool print_first {true};
     double gain {1};
     uint32_t shutter_speed {100000};
+    uint32_t sensor_config {0};
     bool is_capturing {false};
 
 #ifndef NDEBUG

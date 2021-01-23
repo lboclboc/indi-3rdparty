@@ -58,6 +58,8 @@ void CameraControl::startCapture()
     }
     camera->connect(MMALCamera::CAPTURE_PORT_NO, encoder.get(), 0); // Connected the capture port to the encoder.
 
+    camera->setSensorConfig(sensor_config);
+
     camera->setExposureParameters(gain, shutter_speed);
 
     LOGF_TEST("shutter speed after enabling camera: %d", camera->getShutterSpeed());
