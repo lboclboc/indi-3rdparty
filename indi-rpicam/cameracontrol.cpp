@@ -91,7 +91,6 @@ void CameraControl::stopCapture()
     camera->stopCapture();
     std::chrono::duration<double> diff = std::chrono::steady_clock::now() - start_time;
     LOGF_TEST("exposure stopped after %f s", diff.count());
-    LOGF_TEST("actual shutterspeed for camera after exposure: %d", camera->getShutterSpeed());
     encoder->disableOutput();
     camera->disconnect();
     is_capturing = false;

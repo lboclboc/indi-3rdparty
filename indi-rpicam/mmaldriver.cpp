@@ -101,11 +101,13 @@ void MMALDriver::addFITSKeywords(fitsfile * fptr, INDI::CCDChip * targetChip)
 {
     LOGF_DEBUG("%s()", __FUNCTION__);
     INDI::CCD::addFITSKeywords(fptr, targetChip);
+    int status = 0;
 
-// FIXME: Update with real exposure time.    fits_update_key_s(fptr, TUINT, "ISOSPEED", &isoSpeed, "ISO Speed", &status);
+    double exposureTime = (double)camera_control->get_camera()->getShutterSpeed() / 1000000.0;
+    fits_update_key_s(fptr, TDOUBLE, "EXPTIME", &(exposureTime), "Total Integration Time (s)", &status);
+    LOGF_TEST("Reporting back exposure time: %f", exposureTime);
 
 #ifdef USE_ISO
-    int status = 0;
     if (mIsoSP.nsp > 0)
     {
         ISwitch * onISO = IUFindOnSwitch(&mIsoSP);

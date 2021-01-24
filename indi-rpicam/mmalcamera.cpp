@@ -94,7 +94,6 @@ void MMALCamera::setExposureParameters(double gain, uint32_t shutter_speed)
 
     MMALException::throw_if(mmal_port_parameter_set_rational(component->control, MMAL_PARAMETER_BRIGHTNESS, MMAL_RATIONAL_T{50, 100}), "Failed to set brightness");
 
-    // FIXME-TEST: Tested fixed fps, did not help long exposure: MMAL_PARAMETER_EXPOSUREMODE_T exposure = {{MMAL_PARAMETER_EXPOSURE_MODE, sizeof exposure}, MMAL_PARAM_EXPOSUREMODE_FIXEDFPS};
     MMAL_PARAMETER_EXPOSUREMODE_T exposure = {{MMAL_PARAMETER_EXPOSURE_MODE, sizeof exposure}, MMAL_PARAM_EXPOSUREMODE_OFF};
     MMALException::throw_if(mmal_port_parameter_set(component->control, &exposure.hdr), "Failed to set exposure mode");
 
@@ -115,17 +114,13 @@ void MMALCamera::setExposureParameters(double gain, uint32_t shutter_speed)
 
     // Sensor config end exposure ranges.
     uint32_t sensor_config = shutter_speed  > 1000000 ? 3 : 2;  // From "Raspberry Pi Camera Guide" chapter "Sensor input modes" (https://magpi.raspberrypi.org/books/camera-guide/pdf/download)
-    if (strncpy(cameraModel, MODEL_IMX477, sizeof cameraModel) == 0) {
+    if (strncmp(cameraModel, MODEL_IMX477, sizeof cameraModel) == 0) {
         sensor_config = 3; // Always mode 3 for hi-res on imx477.
     }
-    LOGF_TEST("Using sensor_config %d", sensor_config);
+    LOGF_TEST("Using sensor_config %ds", sensor_config);
 
     MMALException::throw_if(mmal_port_parameter_set_uint32(component->control, MMAL_PARAMETER_CAMERA_CUSTOM_SENSOR_CONFIG, sensor_config), "Could not set sensor config.");
 
-    // FIXME-TEST: Testing if burstmode helps long exposures: nope it did not..
-    // MMALException::throw_if(mmal_port_parameter_set_boolean(component->control,  MMAL_PARAMETER_CAMERA_BURST_CAPTURE, 1), "Failed to set burst mode");
-
-#if 1 // FIXME-TEST: Testing if not setting range at all helps long exposure: It stopped long exposure totally.
     MMAL_RATIONAL_T low, high;
     if(shutter_speed > 6000000) {
         low = {5, 1000};
@@ -148,7 +143,6 @@ void MMALCamera::setExposureParameters(double gain, uint32_t shutter_speed)
         LOGF_TEST("failed to set fps ranges: low range is %d/%d, high range is %d/%d",
                 fps_range.fps_low.num, fps_range.fps_low.den, fps_range.fps_high.num, fps_range.fps_high.den);
     }
-#endif // FIXME-TEST
 
     // Exposure time.
     MMALException::throw_if(mmal_port_parameter_set_uint32(component->control, MMAL_PARAMETER_SHUTTER_SPEED, shutter_speed), "Failed to set shutter speed");
