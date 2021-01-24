@@ -162,13 +162,13 @@ bool MMALDriver::Connect()
         PrimaryCCD.setMinMaxStep("CCD_EXPOSURE", "CCD_EXPOSURE_VALUE", 0.001, 6, .0001, false);
     }
     //V2 cam
-    else if (!strcmp(camera_control->get_camera()->getModel(), "imx219"))
+    else if (!strncmp(camera_control->get_camera()->getModel(), MMALCamera::MODEL_IMX219, MMALCamera::modelNameSize))
     {
         IUSaveText(&BayerT[2], "BGGR");
         PrimaryCCD.setMinMaxStep("CCD_EXPOSURE", "CCD_EXPOSURE_VALUE", 0.001, 10, .0001, false);
     }
     //HQ cam
-    else if (!strcmp(camera_control->get_camera()->getModel(), "imx477"))
+    else if (!strncmp(camera_control->get_camera()->getModel(), MMALCamera::MODEL_IMX477, MMALCamera::modelNameSize))
     {
         IUSaveText(&BayerT[2], "BGGR");
         PrimaryCCD.setMinMaxStep("CCD_EXPOSURE", "CCD_EXPOSURE_VALUE", 0.001, 200, .0001, false);
@@ -579,7 +579,7 @@ void MMALDriver::setupPipeline()
 
     assert(camera_control->get_camera());
 
-    if (!strcmp(camera_control->get_camera()->getModel(), "imx477"))
+    if (!strncmp(camera_control->get_camera()->getModel(), MMALCamera::MODEL_IMX477, MMALCamera::modelNameSize))
     {
         raw_pipe.reset(new JpegPipeline());
 
@@ -601,7 +601,7 @@ void MMALDriver::setupPipeline()
         // receiver->daisyChain(&raw_writer);
         brcm_pipe->daisyChain(raw10_pipe);
     }    
-    else if (!strcmp(camera_control->get_camera()->getModel(), "imx219"))
+    else if (!strncmp(camera_control->get_camera()->getModel(), MMALCamera::MODEL_IMX219, MMALCamera::modelNameSize))
     {
         raw_pipe.reset(new JpegPipeline());
 

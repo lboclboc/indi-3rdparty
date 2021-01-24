@@ -30,6 +30,10 @@
 #include "mmalencoder.h"
 #include "inditest.h"
 
+const char *MMALCamera::MODEL_OV5647 {"ov5647"};
+const char *MMALCamera::MODEL_IMX219 {"imx219"};
+const char *MMALCamera::MODEL_IMX477 {"imx477"};
+
 MMALCamera::MMALCamera(int n) : MMALComponent(MMAL_COMPONENT_DEFAULT_CAMERA), cameraNum(n)
 {
     LOG_TEST("entered");
@@ -38,13 +42,10 @@ MMALCamera::MMALCamera(int n) : MMALComponent(MMAL_COMPONENT_DEFAULT_CAMERA), ca
 
     getSensorInfo();
 
-    selectSensorConfig(0 /* What ever 0 means */);
-
     configureCamera();
 
     getFPSRange();
 
-    // FIXME: moved from #001 to after sensor Enable the controlport so calls below works.
     enablePort(component->control, false);
 
     LOGF_TEST("fps_low=%d/%d, fps_high=%d/%d", fps_low.num, fps_low.den, fps_high.num, fps_high.den);
@@ -110,7 +111,17 @@ void MMALCamera::setExposureParameters(double gain, uint32_t shutter_speed)
 
     MMALException::throw_if(mmal_port_parameter_set_uint32(component->control, MMAL_PARAMETER_CAPTURE_STATS_PASS, MMAL_TRUE), "Failed to set CAPTURE_STATS_PASS");
 
+
     // Exposure ranges
+    uint32_t sensor_config = shutter_speed  > 1000000 ? 3 : 2;  // From "Raspberry Pi Camera Guide" chapter "Sensor input modes" (https://magpi.raspberrypi.org/books/camera-guide/pdf/download)
+    if (strncpy(cameraModel, MODEL_IMX477, sizeof cameraModel) == 0) {
+        sensor_config = 3; // Always mode 3 for hi-res on imx477.
+    }
+
+    LOGF_TEST("Using sensor_config %d", sensor_config);
+
+    selectSensorConfig(sensor_config);
+
     MMAL_RATIONAL_T low, high;
     if(shutter_speed > 6000000) {
         low = {5, 1000};
@@ -249,16 +260,16 @@ void MMALCamera::getSensorInfo()
 
     /** Workaround for faulty model name. */
     if (!strcmp(cameraModel, "testc")) {
-        strncpy(cameraModel, "imx477", sizeof cameraModel);
+        strncpy(cameraModel, MODEL_IMX477, sizeof cameraModel);
     }
    
-    if (!strcmp(cameraModel, "imx477")) {
+    if (!strcmp(cameraModel, MODEL_IMX477)) {
         xPixelSize = yPixelSize = 1.55F;
     }
-    else if (!strcmp(cameraModel, "ov5647")) {
+    else if (!strcmp(cameraModel, MODEL_OV5647)) {
         xPixelSize = yPixelSize = 1.4F;
     }
-    else if (!strcmp(cameraModel, "imx219")) {
+    else if (!strcmp(cameraModel, MODEL_IMX219)) {
         xPixelSize = yPixelSize = 1.12F;
     }
     else {

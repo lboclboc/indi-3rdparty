@@ -45,6 +45,11 @@ public:
     static const int VIDEO_PORT_NO {1};
     static const int CAPTURE_PORT_NO {2};
 
+    static const char *MODEL_OV5647;
+    static const char *MODEL_IMX219;
+    static const char *MODEL_IMX477;
+    static const size_t modelNameSize = MMAL_PARAMETER_CAMERA_INFO_MAX_STR_LEN;
+
     /** Return the current active shutter speed for camera.h */
     uint32_t getShutterSpeed();
 

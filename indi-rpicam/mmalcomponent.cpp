@@ -37,6 +37,7 @@ MMALComponent::MMALComponent(const char *component_type)
     MMAL_STATUS_T status;
 
     /* Create the component */
+    LOGF_TEST("Creating component type %s", component_type);
     status = mmal_component_create(component_type, &component);
     MMALException::throw_if(status, "Failed to create component");
     component->userdata = this; // c_port_callback needs this to find this object.
