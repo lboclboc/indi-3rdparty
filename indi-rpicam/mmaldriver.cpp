@@ -102,6 +102,8 @@ void MMALDriver::addFITSKeywords(fitsfile * fptr, INDI::CCDChip * targetChip)
     LOGF_DEBUG("%s()", __FUNCTION__);
     INDI::CCD::addFITSKeywords(fptr, targetChip);
 
+// FIXME: Update with real exposure time.    fits_update_key_s(fptr, TUINT, "ISOSPEED", &isoSpeed, "ISO Speed", &status);
+
 #ifdef USE_ISO
     int status = 0;
     if (mIsoSP.nsp > 0)

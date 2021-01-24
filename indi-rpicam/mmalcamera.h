@@ -66,7 +66,6 @@ public:
     void setExposureParameters(double gain, uint32_t shutter_speed);
     void getSensorInfo();
     void selectCameraNumber(uint32_t n);
-    void selectSensorConfig(uint32_t config);
     void configureCamera();
     void getFPSRange();
     void setFPSRange(MMAL_RATIONAL_T low, MMAL_RATIONAL_T high);

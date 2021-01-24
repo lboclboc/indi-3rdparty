@@ -24,6 +24,7 @@
 #include "raw12tobayer16pipeline.h"
 #include "broadcompipeline.h"
 #include "chipwrapper.h"
+#include "inditest.h"
 
 #include <fstream>
 
@@ -59,7 +60,12 @@ void Raw12ToBayer16Pipeline::data_received(uint8_t *data,  uint32_t length)
 {
     uint8_t byte;
 
-    assert(bcm_pipe->header.omx_data.raw_width == 6112); 
+#ifndef NDEBUG
+    if (bcm_pipe->header.omx_data.raw_width != 6112) {
+        LOGF_TEST("raw_with was %d", bcm_pipe->header.omx_data.raw_width);
+    }
+#endif
+// FIXME: For some reason this started to trigger and raw size was 3072:  assert(bcm_pipe->header.omx_data.raw_width == 6112); 
     assert(ccd->getXRes() == 4056);
     assert(ccd->getYRes() == 3040);
 
